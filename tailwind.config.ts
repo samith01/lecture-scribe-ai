@@ -47,16 +47,19 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
+        record: {
+          DEFAULT: "hsl(var(--record))",
+          foreground: "hsl(var(--record-foreground))",
         },
+        status: {
+          recording: "hsl(var(--status-recording))",
+          processing: "hsl(var(--status-processing))",
+          idle: "hsl(var(--status-idle))",
+        },
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Courier New', 'monospace'],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -84,6 +87,8 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "pulse-record": "pulse-record 1.5s ease-in-out infinite",
+        "fade-in-text": "fade-in-text 0.2s ease-out forwards",
       },
     },
   },
