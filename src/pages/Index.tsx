@@ -12,21 +12,27 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Index = () => {
   const [transcript, setTranscript] = useState<string[]>([]);
+  const [interimText, setInterimText] = useState('');
   const [notes, setNotes] = useState('');
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  
+
   const { toast } = useToast();
   const { createNewSession, updateSession, finalizeSession } = useNoteStorage();
 
   const handleTranscript = (text: string) => {
     setTranscript(prev => [...prev, text]);
-    
+    setInterimText('');
+
     // Trigger AI processing with last 3 sentences
     const recentTranscript = [...transcript, text].slice(-3).join(' ');
     const fullTranscript = [...transcript, text].join(' ');
-    
+
     processTranscript(recentTranscript, notes, fullTranscript);
+  };
+
+  const handleInterimTranscript = (text: string) => {
+    setInterimText(text);
   };
 
   const handleError = (errorMsg: string) => {
@@ -40,6 +46,7 @@ const Index = () => {
 
   const { isListening, isSupported, startListening, stopListening } = useSpeechRecognition({
     onTranscript: handleTranscript,
+    onInterimTranscript: handleInterimTranscript,
     onError: handleError,
   });
 
@@ -81,17 +88,18 @@ const Index = () => {
     if (isListening) {
       console.log("Stopping listening")
       stopListening();
+      setInterimText('');
       finalizeSession();
     } else {
       createNewSession();
       setTranscript([]);
+      setInterimText('');
       setNotes('');
       setDuration(0);
       setError(null);
       startListening();
-     
+    }
   };
-}
 
   if (!isSupported) {
     return (
@@ -126,7 +134,11 @@ const Index = () => {
 
       <div className="flex-1 flex overflow-hidden relative">
         <div className="w-2/5">
-          <TranscriptPanel transcript={transcript} isRecording={isListening} />
+          <TranscriptPanel
+            transcript={transcript}
+            isRecording={isListening}
+            interimText={interimText}
+          />
         </div>
         <div className="flex-1">
           <NotesPanel

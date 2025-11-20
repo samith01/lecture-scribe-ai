@@ -3,9 +3,10 @@ import { useEffect, useRef } from 'react';
 interface TranscriptPanelProps {
   transcript: string[];
   isRecording: boolean;
+  interimText?: string;
 }
 
-export const TranscriptPanel = ({ transcript, isRecording }: TranscriptPanelProps) => {
+export const TranscriptPanel = ({ transcript, isRecording, interimText }: TranscriptPanelProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isUserScrolling = useRef(false);
 
@@ -13,7 +14,7 @@ export const TranscriptPanel = ({ transcript, isRecording }: TranscriptPanelProp
     if (!isUserScrolling.current && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [transcript]);
+  }, [transcript, interimText]);
 
   const handleScroll = () => {
     if (scrollRef.current) {
@@ -55,6 +56,12 @@ export const TranscriptPanel = ({ transcript, isRecording }: TranscriptPanelProp
             {line}
           </div>
         ))}
+
+        {interimText && (
+          <div className="font-mono text-sm text-muted-foreground/60 italic">
+            {interimText}
+          </div>
+        )}
       </div>
     </div>
   );

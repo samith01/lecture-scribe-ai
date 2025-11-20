@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 
 interface UseSpeechRecognitionProps {
   onTranscript: (text: string) => void;
+  onInterimTranscript: (text: string) => void;
   onError: (error: string) => void;
 }
 
-export const useSpeechRecognition = ({ onTranscript, onError }: UseSpeechRecognitionProps) => {
+export const useSpeechRecognition = ({ onTranscript, onInterimTranscript, onError }: UseSpeechRecognitionProps) => {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef<any>(null);
@@ -27,13 +28,21 @@ export const useSpeechRecognition = ({ onTranscript, onError }: UseSpeechRecogni
 
     recognition.onresult = (event: any) => {
       let finalTranscript = '';
+      let interimTranscript = '';
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript;
         }
       }
-      
+
+      if (interimTranscript) {
+        onInterimTranscript(interimTranscript);
+      }
+
       if (finalTranscript) {
         onTranscript(finalTranscript.trim());
       }
