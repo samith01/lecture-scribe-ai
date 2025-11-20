@@ -79,6 +79,7 @@ const Index = () => {
 
   const handleToggleRecording = () => {
     if (isListening) {
+      console.log("Stopping listening")
       stopListening();
       finalizeSession();
     } else {
@@ -88,8 +89,9 @@ const Index = () => {
       setDuration(0);
       setError(null);
       startListening();
-    }
+     
   };
+}
 
   if (!isSupported) {
     return (

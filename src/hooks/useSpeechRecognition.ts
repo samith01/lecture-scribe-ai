@@ -21,65 +21,51 @@ export const useSpeechRecognition = ({ onTranscript, onError }: UseSpeechRecogni
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
     recognition.onresult = (event: any) => {
       let finalTranscript = '';
-      
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += transcript + ' ';
         }
       }
-
+      
       if (finalTranscript) {
         onTranscript(finalTranscript.trim());
       }
     };
 
-    recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
       
-      if (event.error === 'network') {
-        onError('Network error. Please check your internet connection.');
-        // Auto-restart after network error
-        setTimeout(() => {
-          if (isListening) {
-            recognition.start();
-          }
-        }, 1000);
-      } else if (event.error === 'no-speech') {
-        // Silently restart - this is normal during pauses
-        if (isListening) {
-          recognition.start();
-        }
-      } else {
-        onError(`Speech recognition error: ${event.error}`);
-      }
-    };
 
-    recognition.onend = () => {
-      // Auto-restart if still supposed to be listening
-      if (isListening) {
-        try {
-          recognition.start();
-        } catch (e) {
-          console.error('Failed to restart recognition:', e);
-        }
-      }
-    };
 
+    
     recognitionRef.current = recognition;
-
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
     };
-  }, [onTranscript, onError, isListening]);
+  }, []);
+
+
+  useEffect(() => {
+    if (recognitionRef.current){
+      recognitionRef.current.onend = () => {
+             if (isListening) {
+            console.log("Ended")
+            try {
+              recognitionRef.current.start();
+            } catch (e) {
+              console.error('Failed to restart recognition:', e);
+            }
+          }
+        }
+  }
+},[isListening])
 
   const startListening = () => {
     if (!isSupported || !recognitionRef.current) return;
