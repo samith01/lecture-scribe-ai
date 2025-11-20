@@ -1,27 +1,28 @@
 import { useState, useCallback, useRef } from 'react';
 import { groq } from '@/utils/groqClient';
+import { applySmartDiff } from '@/utils/incrementalNoteBuilder';
 
-const SYSTEM_PROMPT = `You are a professional note-taker creating beautiful, well-structured lecture notes.
+const SYSTEM_PROMPT = `You are an expert lecture note-taker. Your job is to extract key information and structure it beautifully.
 
-NOTE-TAKING GUIDELINES:
-1. Create clear, descriptive headings (## Main Topic) from what the professor discusses
-2. Group related points under appropriate headings
-3. Use bullet points (-) for individual facts or concepts
-4. Use sub-bullets (  -) for examples or details under main points
-5. Keep headings complete and descriptive (e.g., "## Artificial Intelligence" not "## Intelligence")
-6. Organize content logically - group related information together
-7. Use bold (**text**) for key terms and definitions
-8. Only include information from the transcript - no invented content
-9. Remove filler words but keep technical terminology exact
+CRITICAL RULES:
+1. ONLY process NEW information from the transcript that isn't already in the notes
+2. Use clear, complete heading names (e.g., "## Artificial Intelligence Overview")
+3. Create bullet points with "- " for main points
+4. Use sub-bullets with "  - " for supporting details
+5. Bold important terms with **term**
+6. Group related information logically under appropriate headings
+7. NEVER invent or add information not in the transcript
+8. If information relates to an existing topic, add bullets to that section
+9. Keep technical terms exact as spoken
 
-STRUCTURE EXAMPLE:
+OUTPUT FORMAT (example):
 ## Main Topic Name
-- Key concept or definition
+- **Key term**: Definition or explanation
   - Supporting detail or example
-- Another key point
-- Related point
+- Another important point
+- Related concept
 
-## Another Topic
+## Different Topic
 - Point about this topic`;
 
 interface UseGroqProcessorProps {
@@ -31,54 +32,87 @@ interface UseGroqProcessorProps {
 
 export const useGroqProcessor = ({ onNotesUpdate, onError }: UseGroqProcessorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [queue, setQueue] = useState<string[]>([]);
+  const lastProcessedTranscript = useRef<string>('');
+  const processingTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastProcessTime = useRef<number>(0);
-  const processingInterval = 15000;
-  const lastProcessedLength = useRef<number>(0);
+  const minProcessInterval = 8000;
 
   const processTranscript = useCallback(async (
-    fullTranscript: string,
-    currentNotes: string
+    recentTranscript: string,
+    currentNotes: string,
+    fullTranscript: string
   ) => {
     if (!groq) {
-      onError('Groq API not configured. Please add your API key.');
+      onError('Groq API not configured. Please add VITE_GROQ_API_KEY to your .env file');
       return;
     }
 
-    // Only process if transcript has grown significantly
-    const transcriptLength = fullTranscript.length;
-    if (transcriptLength - lastProcessedLength.current < 50) {
+    if (!recentTranscript || recentTranscript.trim().length < 20) {
       return;
     }
 
     const now = Date.now();
-    if (now - lastProcessTime.current < processingInterval) {
-      setQueue(prev => [...prev, fullTranscript]);
+    if (now - lastProcessTime.current < minProcessInterval) {
+      if (processingTimeout.current) {
+        clearTimeout(processingTimeout.current);
+      }
+
+      processingTimeout.current = setTimeout(() => {
+        processTranscript(recentTranscript, currentNotes, fullTranscript);
+      }, minProcessInterval - (now - lastProcessTime.current));
+
+      return;
+    }
+
+    const transcriptToProcess = recentTranscript.slice(lastProcessedTranscript.current.length);
+
+    if (transcriptToProcess.trim().length < 15) {
       return;
     }
 
     setIsProcessing(true);
     lastProcessTime.current = now;
-    lastProcessedLength.current = transcriptLength;
+    lastProcessedTranscript.current = recentTranscript;
 
     try {
-      const userPrompt = `LECTURE TRANSCRIPT:
-${fullTranscript}
+      const hasExistingNotes = currentNotes && currentNotes.trim().length > 0;
 
-${currentNotes ? `CURRENT NOTES:
+      let userPrompt: string;
+
+      if (hasExistingNotes) {
+        userPrompt = `EXISTING NOTES:
 ${currentNotes}
 
-TASK: Update and improve the notes structure. Add new information and reorganize if needed for better clarity. Make headings complete and descriptive.` 
-: `TASK: Create well-structured notes from this transcript. Use clear, complete headings and organized bullet points.`}
+NEW TRANSCRIPT SEGMENT:
+${transcriptToProcess}
 
-REQUIREMENTS:
-- Use complete topic names in headings (e.g., "Artificial Intelligence" not just "Intelligence")
-- Group related information under appropriate headings
-- Use bold (**text**) for important terms
-- Create logical structure with main points and sub-points
-- Only include what was actually said
+TASK: Extract new information from the transcript segment and add it to the appropriate sections.
+- If the topic already exists in notes, add new bullet points to that section
+- If it's a new topic, create a new section with ## heading
+- Only output the NEW or MODIFIED sections, NOT the entire document
+- Format each section with its heading and bullets
 
-Output the COMPLETE updated notes document.`;
+Example output if adding to existing topic:
+## Existing Topic Name
+- New bullet point from transcript
+  - Supporting detail
+
+Example output if creating new topic:
+## New Topic Name
+- First point about new topic
+- Second point`;
+      } else {
+        userPrompt = `TRANSCRIPT:
+${transcriptToProcess}
+
+TASK: Create well-structured lecture notes from this transcript.
+- Identify main topics and create clear ## headings
+- Add bullet points for key information
+- Use sub-bullets for details and examples
+- Bold important terms with **term**
+
+Output complete note sections with headings and bullets.`;
+      }
 
       const completion = await groq.chat.completions.create({
         messages: [
@@ -86,50 +120,62 @@ Output the COMPLETE updated notes document.`;
           { role: 'user', content: userPrompt }
         ],
         model: 'llama-3.1-8b-instant',
-        max_tokens: 2000,
-        temperature: 0.1,
-        top_p: 0.9,
+        max_tokens: 800,
+        temperature: 0.2,
+        top_p: 0.95,
       });
 
-      let updatedNotes = completion.choices[0]?.message?.content?.trim() || '';
-      
-      // Basic hallucination check
-      const wordCountInput = fullTranscript.split(/\s+/).length;
-      const wordCountOutput = updatedNotes.split(/\s+/).length;
-      
-      if (wordCountOutput > wordCountInput * 2.5) {
-        console.warn('Output too long - possible hallucination');
+      let newContent = completion.choices[0]?.message?.content?.trim() || '';
+
+      if (!newContent || newContent.length < 5) {
+        setIsProcessing(false);
         return;
       }
-      
-      if (updatedNotes && updatedNotes.length > 10) {
-        onNotesUpdate(updatedNotes);
+
+      const wordCountInput = transcriptToProcess.split(/\s+/).length;
+      const wordCountOutput = newContent.split(/\s+/).length;
+
+      if (wordCountOutput > wordCountInput * 3) {
+        console.warn('Output too long - possible hallucination, skipping');
+        setIsProcessing(false);
+        return;
       }
+
+      if (hasExistingNotes) {
+        const mergedNotes = applySmartDiff(currentNotes, newContent);
+        onNotesUpdate(mergedNotes);
+      } else {
+        onNotesUpdate(newContent);
+      }
+
     } catch (error: any) {
       console.error('Groq processing error:', error);
-      onError(`AI processing error: ${error.message || 'Unknown error'}`);
+
+      if (error?.status === 429) {
+        onError('Rate limit reached. Please wait a moment before continuing.');
+      } else if (error?.status === 401) {
+        onError('Invalid API key. Please check your Groq API configuration.');
+      } else {
+        onError(`AI processing error: ${error?.message || 'Unknown error'}`);
+      }
     } finally {
       setIsProcessing(false);
     }
   }, [onNotesUpdate, onError]);
 
-  const processQueue = useCallback(async (fullTranscript: string, currentNotes: string) => {
-    if (queue.length === 0 || !groq) return;
-
-    setQueue([]);
-    await processTranscript(fullTranscript, currentNotes);
-  }, [queue, processTranscript]);
-
   const resetProcessor = useCallback(() => {
-    setQueue([]);
-    lastProcessedLength.current = 0;
+    lastProcessedTranscript.current = '';
+    lastProcessTime.current = 0;
+    if (processingTimeout.current) {
+      clearTimeout(processingTimeout.current);
+      processingTimeout.current = null;
+    }
   }, []);
 
   return {
     processTranscript,
-    processQueue,
-    resetProcessor,
     isProcessing,
-    queueLength: queue.length,
+    resetProcessor,
+    queueLength: 0,
   };
 };

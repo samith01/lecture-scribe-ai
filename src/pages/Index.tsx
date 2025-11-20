@@ -50,7 +50,7 @@ const Index = () => {
     onError: handleError,
   });
 
-  const { processTranscript, isProcessing, queueLength } = useGroqProcessor({
+  const { processTranscript, isProcessing, queueLength, resetProcessor } = useGroqProcessor({
     onNotesUpdate: (updatedNotes) => {
       setNotes(updatedNotes);
       updateSession({ notes: updatedNotes });
@@ -97,6 +97,7 @@ const Index = () => {
       setNotes('');
       setDuration(0);
       setError(null);
+      resetProcessor();
       startListening();
     }
   };
