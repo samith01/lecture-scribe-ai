@@ -13,12 +13,9 @@ interface UseDocumentProcessorProps {
 }
 
 interface AIEdit {
-  action: 'add_heading' | 'add_bullet' | 'add_subbullet' | 'edit_content' | 'delete_node';
-  parentKey?: string;
-  key?: string;
+  action: 'add_heading' | 'add_bullet' | 'add_subbullet';
   content?: string;
   level?: number;
-  newContent?: string;
 }
 
 const SYSTEM_PROMPT = `You are an expert lecture note-taker creating structured, well-formatted notes in real-time.
@@ -84,8 +81,8 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
   const minProcessInterval = 2000;
   const pendingTranscript = useRef<string>('');
   const sentenceCount = useRef<number>(0);
-  const currentHeadingRef = useRef<DocumentNode | null>(null);
-  const currentBulletRef = useRef<DocumentNode | null>(null);
+  const currentHeadingKey = useRef<string | null>(null);
+  const currentBulletKey = useRef<string | null>(null);
 
   const processTranscript = useCallback(
     async (fullTranscript: string) => {
@@ -164,47 +161,75 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
         if (result.edits && result.edits.length > 0) {
           console.log('Applying', result.edits.length, 'edits');
 
-          const newRoot = JSON.parse(JSON.stringify(documentState.root));
+          setDocumentState(prevState => {
+            const newRoot = JSON.parse(JSON.stringify(prevState.root));
 
-          result.edits.forEach(edit => {
-            if (edit.action === 'add_heading' && edit.content) {
-              const heading = createNode(
-                edit.level === 3 ? 'subheading' : 'heading',
-                edit.content,
-                edit.level || 2,
-                []
-              );
-              newRoot.children.push(heading);
-              currentHeadingRef.current = heading;
-              currentBulletRef.current = null;
-              console.log('Added heading:', edit.content);
-            } else if (edit.action === 'add_bullet' && edit.content) {
-              if (currentHeadingRef.current) {
-                const bullet = createNode('bullet', edit.content, 1, []);
-                currentHeadingRef.current.children.push(bullet);
-                currentBulletRef.current = bullet;
-                console.log('Added bullet:', edit.content);
-              } else {
-                const heading = createNode('heading', 'Notes', 2, []);
-                const bullet = createNode('bullet', edit.content, 1, []);
-                heading.children.push(bullet);
+            result.edits.forEach(edit => {
+              if (edit.action === 'add_heading' && edit.content) {
+                const heading = createNode(
+                  edit.level === 3 ? 'subheading' : 'heading',
+                  edit.content,
+                  edit.level || 2,
+                  []
+                );
                 newRoot.children.push(heading);
-                currentHeadingRef.current = heading;
-                currentBulletRef.current = bullet;
-                console.log('Added default heading and bullet:', edit.content);
-              }
-            } else if (edit.action === 'add_subbullet' && edit.content) {
-              if (currentBulletRef.current) {
-                const subbullet = createNode('subbullet', edit.content, 1, []);
-                currentBulletRef.current.children.push(subbullet);
-                console.log('Added subbullet:', edit.content);
-              }
-            }
-          });
+                currentHeadingKey.current = heading.key;
+                currentBulletKey.current = null;
+                console.log('Added heading:', edit.content, 'key:', heading.key);
+              } else if (edit.action === 'add_bullet' && edit.content) {
+                let targetHeading = null;
 
-          const newState = buildDocumentState(newRoot);
-          setDocumentState(newState);
-          console.log('Document updated, total nodes:', newState.keyMap.size);
+                if (currentHeadingKey.current) {
+                  const findHeading = (node: DocumentNode): DocumentNode | null => {
+                    if (node.key === currentHeadingKey.current) return node;
+                    for (const child of node.children) {
+                      const found = findHeading(child);
+                      if (found) return found;
+                    }
+                    return null;
+                  };
+                  targetHeading = findHeading(newRoot);
+                }
+
+                if (targetHeading) {
+                  const bullet = createNode('bullet', edit.content, 1, []);
+                  targetHeading.children.push(bullet);
+                  currentBulletKey.current = bullet.key;
+                  console.log('Added bullet to heading:', edit.content, 'key:', bullet.key);
+                } else {
+                  const heading = createNode('heading', 'Notes', 2, []);
+                  const bullet = createNode('bullet', edit.content, 1, []);
+                  heading.children.push(bullet);
+                  newRoot.children.push(heading);
+                  currentHeadingKey.current = heading.key;
+                  currentBulletKey.current = bullet.key;
+                  console.log('Added default heading and bullet:', edit.content);
+                }
+              } else if (edit.action === 'add_subbullet' && edit.content) {
+                if (currentBulletKey.current) {
+                  const findBullet = (node: DocumentNode): DocumentNode | null => {
+                    if (node.key === currentBulletKey.current) return node;
+                    for (const child of node.children) {
+                      const found = findBullet(child);
+                      if (found) return found;
+                    }
+                    return null;
+                  };
+
+                  const targetBullet = findBullet(newRoot);
+                  if (targetBullet) {
+                    const subbullet = createNode('subbullet', edit.content, 1, []);
+                    targetBullet.children.push(subbullet);
+                    console.log('Added subbullet:', edit.content);
+                  }
+                }
+              }
+            });
+
+            const newState = buildDocumentState(newRoot);
+            console.log('Document updated, total nodes:', newState.keyMap.size);
+            return newState;
+          });
         } else {
           console.log('No edits received from AI');
         }
@@ -233,8 +258,8 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
     lastProcessTime.current = 0;
     pendingTranscript.current = '';
     sentenceCount.current = 0;
-    currentHeadingRef.current = null;
-    currentBulletRef.current = null;
+    currentHeadingKey.current = null;
+    currentBulletKey.current = null;
   }, []);
 
   const getMarkdown = useCallback(() => {
