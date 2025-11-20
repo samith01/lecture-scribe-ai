@@ -90,6 +90,12 @@ const Checkout = () => {
               </div>
             </Card>
 
+            <div className="bg-slate-100 rounded-lg p-4 text-sm text-slate-600">
+              <p className="font-semibold mb-2">🔒 Secure Payment</p>
+              <p>
+                Payments processed securely through Stripe. Your payment information is never stored on our servers.
+              </p>
+            </div>
           </div>
 
           <div>
@@ -113,7 +119,15 @@ const Checkout = () => {
                   </p>
                 </div>
 
-                
+                <div className="bg-slate-50 rounded-lg p-4 border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CreditCard className="w-5 h-5 text-slate-600" />
+                    <span className="font-medium">Card Information</span>
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    Stripe checkout will be integrated here. For beta launch, we're collecting emails first.
+                  </p>
+                </div>
               </div>
 
               <Button
@@ -137,6 +151,9 @@ const Checkout = () => {
             </Card>
 
             <div className="mt-6 flex items-center justify-center gap-4 text-xs text-slate-500">
+              <span>🔒 Secure SSL</span>
+              <span>💳 Stripe</span>
+              <span>↩️ 30-Day Guarantee</span>
             </div>
           </div>
         </div>

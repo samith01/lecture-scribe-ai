@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
-import { ReactFlowProvider } from '@xyflow/react';
+import { useState, useEffect, useRef } from 'react';
 import { StatusBar } from '@/components/StatusBar';
 import { TranscriptPanel } from '@/components/TranscriptPanel';
-import { MindMapViewer } from '@/components/MindMapViewer';
-import { MindMapExportMenu } from '@/components/MindMapExportMenu';
+import { LiveNotesEditor } from '@/components/LiveNotesEditor';
+import { ExportMenu } from '@/components/ExportMenu';
+import { ChatInput } from '@/components/ChatInput';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
-import { useMindMapProcessor } from '@/hooks/useMindMapProcessor';
+import { useStreamingNotes } from '@/hooks/useStreamingNotes';
 import { useNoteStorage } from '@/hooks/useNoteStorage';
+import { useChatCorrections } from '@/hooks/useChatCorrections';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -14,8 +15,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const Index = () => {
   const [transcript, setTranscript] = useState<string[]>([]);
   const [interimText, setInterimText] = useState('');
+  const [notes, setNotes] = useState('');
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const notesRef = useRef('');
 
   const { toast } = useToast();
   const { createNewSession, updateSession, finalizeSession } = useNoteStorage();
@@ -29,7 +32,7 @@ const Index = () => {
     });
   };
 
-  const { processTranscript, isProcessing, resetProcessor, mindMapNodes } = useMindMapProcessor({
+  const { processTranscript, isProcessing, resetProcessor, streamState } = useStreamingNotes({
     onError: handleError,
   });
 
@@ -41,7 +44,9 @@ const Index = () => {
       console.log('New transcript received:', text);
       console.log('Full transcript length:', fullTranscript.length);
 
-      processTranscript(fullTranscript);
+      setTimeout(() => {
+        processTranscript(fullTranscript);
+      }, 0);
 
       return newTranscript;
     });
@@ -59,10 +64,26 @@ const Index = () => {
   });
 
   useEffect(() => {
-    if (mindMapNodes.length > 0) {
-      updateSession({ notes: JSON.stringify(mindMapNodes) });
+    if (streamState.content !== notesRef.current) {
+      notesRef.current = streamState.content;
+      setNotes(streamState.content);
+      updateSession({ notes: streamState.content });
     }
-  }, [mindMapNodes, updateSession]);
+  }, [streamState.content, updateSession]);
+
+  const { processCorrectionMessage, isProcessing: isCorrecting } = useChatCorrections({
+    currentNotes: notes,
+    onNotesUpdate: (correctedNotes) => {
+      notesRef.current = correctedNotes;
+      setNotes(correctedNotes);
+      updateSession({ notes: correctedNotes });
+      toast({
+        title: 'Notes Updated',
+        description: 'Your correction has been applied.',
+      });
+    },
+    onError: handleError,
+  });
 
   // Timer effect
   useEffect(() => {
@@ -100,6 +121,7 @@ const Index = () => {
       createNewSession();
       setTranscript([]);
       setInterimText('');
+      setNotes('');
       setDuration(0);
       setError(null);
       resetProcessor();
@@ -121,56 +143,57 @@ const Index = () => {
   }
 
   return (
-    <ReactFlowProvider>
-      <div className="h-screen flex flex-col bg-background">
-        <StatusBar
-          isRecording={isListening}
-          isProcessing={isProcessing}
-          duration={duration}
-          onToggleRecording={handleToggleRecording}
-        />
+    <div className="h-screen flex flex-col bg-background">
+      <StatusBar
+        isRecording={isListening}
+        isProcessing={isProcessing || streamState.isAnimating}
+        duration={duration}
+        onToggleRecording={handleToggleRecording}
+      />
 
-        {error && (
-          <div className="px-6 py-3 bg-destructive/10 border-b border-destructive/20">
-            <div className="flex items-center gap-2 text-sm text-destructive">
-              <AlertCircle className="w-4 h-4" />
-              <span>{error}</span>
-            </div>
-          </div>
-        )}
-
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 flex overflow-hidden relative">
-            <div className="w-2/5">
-              <TranscriptPanel
-                transcript={transcript}
-                isRecording={isListening}
-                interimText={interimText}
-              />
-            </div>
-            <div className="flex-1 flex flex-col">
-              <div className="p-6 border-b border-border bg-background">
-                <h2 className="text-xl font-bold text-foreground">Visual Mind Map</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {isProcessing ? 'AI is building your mind map...' : 'AI-powered visual note mapping'}
-                </p>
-              </div>
-              <MindMapViewer
-                mindMapNodes={mindMapNodes}
-                isProcessing={isProcessing}
-              />
-            </div>
-
-            {!isListening && (mindMapNodes.length > 0 || transcript.length > 0) && (
-              <MindMapExportMenu
-                mindMapNodes={mindMapNodes}
-                transcript={transcript.join(' ')}
-              />
-            )}
+      {error && (
+        <div className="px-6 py-3 bg-destructive/10 border-b border-destructive/20">
+          <div className="flex items-center gap-2 text-sm text-destructive">
+            <AlertCircle className="w-4 h-4" />
+            <span>{error}</span>
           </div>
         </div>
+      )}
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex overflow-hidden relative">
+          <div className="w-2/5">
+            <TranscriptPanel
+              transcript={transcript}
+              isRecording={isListening}
+              interimText={interimText}
+            />
+          </div>
+          <div className="flex-1 flex flex-col bg-background">
+            <div className="p-6 border-b border-border">
+              <h2 className="text-xl font-bold text-foreground">Structured Notes</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {streamState.isAnimating ? 'AI is building your notes...' : 'AI-powered note structuring'}
+              </p>
+            </div>
+            <LiveNotesEditor
+              content={streamState.content}
+              operations={[]}
+              isAnimating={streamState.isAnimating}
+            />
+          </div>
+
+          {!isListening && (notes || transcript.length > 0) && (
+            <ExportMenu notes={notes} transcript={transcript.join(' ')} />
+          )}
+        </div>
+
+        <ChatInput
+          onSendMessage={processCorrectionMessage}
+          disabled={!notes || isCorrecting || isListening}
+        />
       </div>
-    </ReactFlowProvider>
+    </div>
   );
 };
 

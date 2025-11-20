@@ -64,7 +64,7 @@ export const useSpeechRecognition = ({ onTranscript, onInterimTranscript, onErro
   useEffect(() => {
     if (recognitionRef.current){
       recognitionRef.current.onend = () => {
-            if (isListening) {
+             if (isListening) {
             console.log("Ended")
             try {
               recognitionRef.current.start();
