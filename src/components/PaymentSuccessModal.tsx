@@ -44,7 +44,7 @@ const PaymentSuccessModal = ({ open, onClose, email }: PaymentSuccessModalProps)
             </Button>
 
             <a
-              href="https://discord.gg/notesync"
+              href="https://discord.com/invite/SE7EEDPr"
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full"
@@ -54,7 +54,7 @@ const PaymentSuccessModal = ({ open, onClose, email }: PaymentSuccessModalProps)
                 className="w-full"
                 size="lg"
               >
-                Join Discord for Updates
+                Join Discord for 50% Discount
               </Button>
             </a>
           </div>
@@ -63,10 +63,10 @@ const PaymentSuccessModal = ({ open, onClose, email }: PaymentSuccessModalProps)
             <p className="text-xs text-slate-500 leading-relaxed">
               Questions or need a refund? Contact us at{' '}
               <a
-                href="mailto:support@notesync.ai"
+                href="mailto:support@notesbyai.com"
                 className="text-blue-600 hover:underline"
               >
-                support@notesync.ai
+                support@notesbyai.com
               </a>
             </p>
           </div>

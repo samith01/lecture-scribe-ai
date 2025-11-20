@@ -44,8 +44,8 @@ Deno.serve(async (req: Request) => {
           price_data: {
             currency: "usd",
             product_data: {
-              name: "NoteSync AI - Beta Access",
-              description: "Lifetime beta access with 50%+ discount when we launch",
+              name: "NotesByAI - Beta Access",
+              description: "Beta access with 50% discount for first 3 months (join Discord)",
             },
             unit_amount: 500,
           },

@@ -15,7 +15,6 @@ const Landing = () => {
   const [paidUserEmail, setPaidUserEmail] = useState<string | undefined>();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const spotsRemaining = 47;
 
   useEffect(() => {
     const checkPaymentSuccess = async () => {
@@ -100,15 +99,10 @@ const Landing = () => {
 
       <nav className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-xl">NoteSync AI</span>
+          <div className="flex items-center gap-3">
+            <img src="/transparent-logo.png" alt="NotesByAI" className="h-10 w-auto" />
+            <span className="font-bold text-xl">NotesByAI</span>
           </div>
-          <Button variant="ghost" size="sm">
-            Sign In
-          </Button>
         </div>
       </nav>
 
@@ -259,11 +253,11 @@ const Landing = () => {
           </h2>
 
           <p className="text-xl mb-4 text-blue-100">
-            One-time payment of <span className="font-bold text-white text-3xl">$5</span> for lifetime beta access
+            One-time payment of <span className="font-bold text-white text-3xl">$5</span> for beta access
           </p>
 
           <p className="text-lg mb-8 text-blue-100">
-            No free trial—watch the demo, then decide. Beta users get lifetime discount and priority support.
+            No free trial—watch the demo, then decide. Beta users get priority support and special Discord perks.
           </p>
 
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 mb-8 border border-white/20">
@@ -275,7 +269,7 @@ const Landing = () => {
               </li>
               <li className="flex items-start gap-3">
                 <Check className="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" />
-                <span>Lifetime beta discount (save 50%+ when we launch)</span>
+                <span>50% discount for first 3 months (join Discord)</span>
               </li>
               <li className="flex items-start gap-3">
                 <Check className="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" />
@@ -322,10 +316,10 @@ const Landing = () => {
 
           <div className="bg-orange-500/20 border border-orange-300/50 rounded-lg p-4 max-w-md mx-auto">
             <p className="font-semibold text-orange-100">
-              ⚡ Limited Launch: Only {spotsRemaining} seats at $5
+              ⚡ Join our Discord for exclusive 50% discount
             </p>
             <p className="text-sm text-orange-200 mt-1">
-              Next pricing starts at $10/month
+              Valid for your first 3 months after launch
             </p>
           </div>
         </div>
@@ -335,9 +329,9 @@ const Landing = () => {
         <div className="bg-slate-50 rounded-xl p-8 text-center border">
           <h3 className="text-2xl font-semibold mb-4">Why $5 Now?</h3>
           <p className="text-slate-600 max-w-2xl mx-auto mb-6">
-            We're validating the product with real students. Your $5 commitment shows you're serious,
-            funds early development, and locks in your lifetime discount. Once we hit 100 users,
-            the price jumps to $10/month subscription.
+            We're validating the product with real students. Your $5 commitment shows you're serious
+            and funds early development. Join our Discord community for exclusive perks and 50% off
+            your first 3 months when we officially launch.
           </p>
           <p className="text-sm text-slate-500">
             30-day money-back guarantee. No questions asked.
@@ -348,15 +342,13 @@ const Landing = () => {
       <footer className="border-t bg-slate-50 py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-8">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="font-bold text-lg">NoteSync AI</span>
+            <div className="flex items-center gap-3">
+              <img src="/transparent-logo.png" alt="NotesByAI" className="h-10 w-auto" />
+              <span className="font-bold text-lg">NotesByAI</span>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6 text-sm text-slate-600">
-              <a href="mailto:support@notesync.ai" className="hover:text-blue-600">
+              <a href="mailto:support@notesbyai.com" className="hover:text-blue-600">
                 Contact Support
               </a>
               <a href="#" className="hover:text-blue-600">
@@ -365,7 +357,7 @@ const Landing = () => {
               <a href="#" className="hover:text-blue-600">
                 Terms of Service
               </a>
-              <a href="https://discord.gg/notesync" className="hover:text-blue-600">
+              <a href="https://discord.com/invite/SE7EEDPr" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">
                 Discord Community
               </a>
             </div>
@@ -377,8 +369,8 @@ const Landing = () => {
               <p className="text-slate-600">
                 We offer a 30-day money-back guarantee. If you're not satisfied with your beta access,
                 contact us at{' '}
-                <a href="mailto:support@notesync.ai" className="text-blue-600 hover:underline font-medium">
-                  support@notesync.ai
+                <a href="mailto:support@notesbyai.com" className="text-blue-600 hover:underline font-medium">
+                  support@notesbyai.com
                 </a>{' '}
                 for a full refund, no questions asked.
               </p>
@@ -395,8 +387,8 @@ const Landing = () => {
             <div className="text-sm text-slate-600">
               <p className="mb-2">
                 <strong>Questions?</strong> Email us at{' '}
-                <a href="mailto:support@notesync.ai" className="text-blue-600 hover:underline">
-                  support@notesync.ai
+                <a href="mailto:support@notesbyai.com" className="text-blue-600 hover:underline">
+                  support@notesbyai.com
                 </a>
               </p>
               <p>We typically respond within 24 hours.</p>
@@ -404,7 +396,7 @@ const Landing = () => {
           </div>
 
           <div className="text-center mt-8 text-sm text-slate-500">
-            © 2025 NoteSync AI. All rights reserved.
+            © 2025 NotesByAI. All rights reserved.
           </div>
         </div>
       </footer>
