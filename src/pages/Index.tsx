@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { StatusBar } from '@/components/StatusBar';
 import { TranscriptPanel } from '@/components/TranscriptPanel';
-import { NotesPanel } from '@/components/NotesPanel';
+import { LiveNotesEditor } from '@/components/LiveNotesEditor';
 import { ExportMenu } from '@/components/ExportMenu';
 import { ChatInput } from '@/components/ChatInput';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
-import { useGroqProcessor } from '@/hooks/useGroqProcessor';
+import { useStreamingNotes } from '@/hooks/useStreamingNotes';
 import { useNoteStorage } from '@/hooks/useNoteStorage';
 import { useChatCorrections } from '@/hooks/useChatCorrections';
 import { useToast } from '@/hooks/use-toast';
@@ -26,15 +26,13 @@ const Index = () => {
   const handleTranscript = (text: string) => {
     setTranscript(prev => {
       const newTranscript = [...prev, text];
-      const recentTranscript = newTranscript.slice(-3).join(' ');
       const fullTranscript = newTranscript.join(' ');
 
       console.log('New transcript received:', text);
       console.log('Full transcript length:', fullTranscript.length);
-      console.log('Current notes length:', notesRef.current.length);
 
       setTimeout(() => {
-        processTranscript(recentTranscript, notesRef.current, fullTranscript);
+        processTranscript(fullTranscript);
       }, 0);
 
       return newTranscript;
@@ -61,15 +59,17 @@ const Index = () => {
     onError: handleError,
   });
 
-  const { processTranscript, isProcessing, queueLength, resetProcessor } = useGroqProcessor({
-    onNotesUpdate: (updatedNotes) => {
-      console.log('Notes updated, length:', updatedNotes.length);
-      notesRef.current = updatedNotes;
-      setNotes(updatedNotes);
-      updateSession({ notes: updatedNotes });
-    },
+  const { processTranscript, isProcessing, resetProcessor, streamState } = useStreamingNotes({
     onError: handleError,
   });
+
+  useEffect(() => {
+    if (streamState.content !== notesRef.current) {
+      notesRef.current = streamState.content;
+      setNotes(streamState.content);
+      updateSession({ notes: streamState.content });
+    }
+  }, [streamState.content, updateSession]);
 
   const { processCorrectionMessage, isProcessing: isCorrecting } = useChatCorrections({
     currentNotes: notes,
@@ -146,7 +146,7 @@ const Index = () => {
     <div className="h-screen flex flex-col bg-background">
       <StatusBar
         isRecording={isListening}
-        isProcessing={isProcessing || queueLength > 0}
+        isProcessing={isProcessing || streamState.isAnimating}
         duration={duration}
         onToggleRecording={handleToggleRecording}
       />
@@ -169,11 +169,17 @@ const Index = () => {
               interimText={interimText}
             />
           </div>
-          <div className="flex-1">
-            <NotesPanel
-              notes={notes}
-              onNotesChange={setNotes}
-              isProcessing={isProcessing}
+          <div className="flex-1 flex flex-col bg-background">
+            <div className="p-6 border-b border-border">
+              <h2 className="text-xl font-bold text-foreground">Structured Notes</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {streamState.isAnimating ? 'AI is building your notes...' : 'AI-powered note structuring'}
+              </p>
+            </div>
+            <LiveNotesEditor
+              content={streamState.content}
+              operations={[]}
+              isAnimating={streamState.isAnimating}
             />
           </div>
 

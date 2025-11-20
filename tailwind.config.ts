@@ -89,6 +89,7 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-record": "pulse-record 1.5s ease-in-out infinite",
         "fade-in-text": "fade-in-text 0.2s ease-out forwards",
+        "cursor-blink": "cursor-blink 1s step-end infinite",
       },
     },
   },
