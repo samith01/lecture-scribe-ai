@@ -7,17 +7,18 @@ export interface IncrementalUpdate {
   bulletPoint?: string;
 }
 
+// Add normalization utility
+const normalizeBullet = (bullet: string): string => {
+  return bullet
+    .trim()
+    .replace(/^[•\-\*]\s*/, '') // Remove bullet markers
+    .toLowerCase();
+};
+
+// Improved IncrementalNoteBuilder
 export class IncrementalNoteBuilder {
   private sections: NoteSection[] = [];
-  private processedTopics: Set<string> = new Set();
-
-  constructor(existingNotes?: string) {
-    if (existingNotes && existingNotes.trim()) {
-      const parsed = parseNoteStructure(existingNotes);
-      this.sections = parsed.sections;
-      this.sections.forEach(s => this.processedTopics.add(s.title.toLowerCase()));
-    }
-  }
+  private contentHashes: Map<string, Set<string>> = new Map(); // section_id -> content hashes
 
   addOrUpdateSection(title: string, bullets: string[]): boolean {
     const normalizedTitle = title.trim();
@@ -26,65 +27,39 @@ export class IncrementalNoteBuilder {
     );
 
     if (existingSection) {
-      const existingBullets = new Set(existingSection.content);
+      const sectionHashes = this.contentHashes.get(existingSection.id) || new Set();
       let hasChanges = false;
 
       bullets.forEach(bullet => {
-        if (!existingBullets.has(bullet)) {
-          existingSection.content.push(bullet);
+        const trimmed = bullet.trim();
+        const hash = normalizeBullet(trimmed);
+        
+        if (!sectionHashes.has(hash)) {
+          existingSection.content.push(trimmed);
+          sectionHashes.add(hash);
           hasChanges = true;
         }
       });
 
+      this.contentHashes.set(existingSection.id, sectionHashes);
       return hasChanges;
     } else {
       const newSection: NoteSection = {
         id: `section_${Date.now()}_${normalizedTitle.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
         title: normalizedTitle,
         level: 2,
-        content: bullets,
+        content: bullets.filter(b => b.trim().length > 0), // Filter empty bullets
         startIndex: 0,
         endIndex: 0,
       };
 
+      // Store hashes for new section
+      const hashes = new Set(bullets.map(b => normalizeBullet(b)));
+      this.contentHashes.set(newSection.id, hashes);
+
       this.sections.push(newSection);
-      this.processedTopics.add(normalizedTitle.toLowerCase());
       return true;
     }
-  }
-
-  addBulletToSection(sectionTitle: string, bullet: string): boolean {
-    const section = findSectionByTopic(this.sections, sectionTitle);
-
-    if (section) {
-      if (!section.content.includes(bullet)) {
-        section.content.push(bullet);
-        return true;
-      }
-      return false;
-    }
-
-    return false;
-  }
-
-  getSections(): NoteSection[] {
-    return this.sections;
-  }
-
-  getMarkdown(): string {
-    if (this.sections.length === 0) {
-      return '';
-    }
-    return rebuildMarkdown(this.sections);
-  }
-
-  hasContent(): boolean {
-    return this.sections.length > 0;
-  }
-
-  clear(): void {
-    this.sections = [];
-    this.processedTopics.clear();
   }
 }
 
