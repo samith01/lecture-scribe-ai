@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { StatusBar } from '@/components/StatusBar';
 import { TranscriptPanel } from '@/components/TranscriptPanel';
 import { NotesPanel } from '@/components/NotesPanel';
@@ -16,19 +16,28 @@ const Index = () => {
   const [notes, setNotes] = useState('');
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const notesRef = useRef('');
 
   const { toast } = useToast();
   const { createNewSession, updateSession, finalizeSession } = useNoteStorage();
 
   const handleTranscript = (text: string) => {
-    setTranscript(prev => [...prev, text]);
+    setTranscript(prev => {
+      const newTranscript = [...prev, text];
+      const recentTranscript = newTranscript.slice(-3).join(' ');
+      const fullTranscript = newTranscript.join(' ');
+
+      console.log('New transcript received:', text);
+      console.log('Full transcript length:', fullTranscript.length);
+      console.log('Current notes length:', notesRef.current.length);
+
+      setTimeout(() => {
+        processTranscript(recentTranscript, notesRef.current, fullTranscript);
+      }, 0);
+
+      return newTranscript;
+    });
     setInterimText('');
-
-    // Trigger AI processing with last 3 sentences
-    const recentTranscript = [...transcript, text].slice(-3).join(' ');
-    const fullTranscript = [...transcript, text].join(' ');
-
-    processTranscript(recentTranscript, notes, fullTranscript);
   };
 
   const handleInterimTranscript = (text: string) => {
@@ -52,6 +61,8 @@ const Index = () => {
 
   const { processTranscript, isProcessing, queueLength, resetProcessor } = useGroqProcessor({
     onNotesUpdate: (updatedNotes) => {
+      console.log('Notes updated, length:', updatedNotes.length);
+      notesRef.current = updatedNotes;
       setNotes(updatedNotes);
       updateSession({ notes: updatedNotes });
     },

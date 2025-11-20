@@ -66,10 +66,19 @@ export const useGroqProcessor = ({ onNotesUpdate, onError }: UseGroqProcessorPro
 
     const transcriptToProcess = fullTranscript.slice(lastProcessedTranscript.current.length);
 
+    console.log('Processing check:', {
+      lastProcessedLength: lastProcessedTranscript.current.length,
+      currentLength: fullTranscript.length,
+      newContentLength: transcriptToProcess.length,
+      hasExistingNotes: currentNotes.length > 0
+    });
+
     if (transcriptToProcess.trim().length < 15) {
+      console.log('Skipping: new content too short');
       return;
     }
 
+    console.log('Starting AI processing...');
     setIsProcessing(true);
     lastProcessTime.current = now;
     lastProcessedTranscript.current = fullTranscript;
@@ -144,9 +153,12 @@ Use ## headings, bullet points, and bold for key terms.`;
       }
 
       if (hasExistingNotes) {
+        console.log('Merging with existing notes...');
         const mergedNotes = applySmartDiff(currentNotes, newContent);
+        console.log('Merged notes length:', mergedNotes.length);
         onNotesUpdate(mergedNotes);
       } else {
+        console.log('Creating initial notes...');
         onNotesUpdate(newContent);
       }
 
