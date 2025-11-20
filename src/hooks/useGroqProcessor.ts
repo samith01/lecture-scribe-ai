@@ -1,29 +1,49 @@
 import { useState, useCallback, useRef } from 'react';
 import { groq } from '@/utils/groqClient';
-import { applySmartDiff } from '@/utils/incrementalNoteBuilder';
 
-const SYSTEM_PROMPT = `You are an expert lecture note-taker. Extract key information and structure it as clean markdown notes.
+const SYSTEM_PROMPT = `You are an expert in structuring classroom lecture notes for students.
+
+Your job is to analyze transcript chunks and produce structured, progressive lecture notes.
 
 CRITICAL RULES:
-1. OUTPUT ONLY PURE MARKDOWN NOTES - no explanations, no meta-commentary
-2. NEVER write text like "Not specified in transcript" or "Example:" or any explanatory text
-3. Use clear, complete heading names (e.g., "## Artificial Intelligence Overview")
-4. Create bullet points with "- " for main points
-5. Use sub-bullets with "  - " for supporting details
-6. Bold important terms with **term**
-7. ONLY include information directly from the transcript
-8. If information relates to an existing topic, add bullets to that section
-9. Keep technical terms exact as spoken
+1. If the transcript introduces MAIN TOPICS, return a list of section headings ONLY.
+2. If the transcript explains a topic, identify the correct heading and provide study-ready bullet points.
+3. NEVER copy sentences from the transcript - always summarize and rephrase for clarity.
+4. Progressively fill in notes: Add bullets under existing headings, don't duplicate headings.
+5. Use clear, descriptive headings relevant to students (e.g., "Supervised Learning", "Neural Networks").
+6. Always format output as valid, structured JSON.
 
-OUTPUT FORMAT:
-## Topic Name
-- **Key term**: Definition
-  - Supporting detail
-- Another point
-- Related concept
+OUTPUT FORMAT (JSON only):
+{
+  "type": "outline" or "update",
+  "createdHeadings": ["New Topic 1", "New Topic 2"],
+  "updatedHeading": "Existing Topic Name",
+  "bullets": [
+    "Clear, concise bullet point.",
+    "Another key point with **bold terms** for emphasis."
+  ],
+  "confidence": 0.95
+}
 
-## Different Topic
-- Point about this topic`;
+RULES:
+- "type": "outline" when only creating headings, "update" when adding details
+- "createdHeadings": Only NEW sections added in this chunk
+- "updatedHeading": The heading under which bullets should be inserted
+- "bullets": Only new bullets, never repeat prior content
+- "confidence": 0.0-1.0, set below 0.5 if uncertain
+- Use clear wording, never raw transcript sentences
+- Bold key terms with **term**
+
+Respond with ONLY valid JSON, no extra text.`;
+
+interface TranscriptAnalysis {
+  type: 'outline' | 'update';
+  createdHeadings?: string[];
+  updatedHeading?: string;
+  bullets?: string[];
+  confidence: number;
+  uncertaintyReason?: string;
+}
 
 interface UseGroqProcessorProps {
   onNotesUpdate: (notes: string) => void;
@@ -36,6 +56,7 @@ export const useGroqProcessor = ({ onNotesUpdate, onError }: UseGroqProcessorPro
   const processingTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastProcessTime = useRef<number>(0);
   const minProcessInterval = 8000;
+  const noteStructure = useRef<Map<string, string[]>>(new Map());
 
   const processTranscript = useCallback(async (
     recentTranscript: string,
@@ -86,26 +107,38 @@ export const useGroqProcessor = ({ onNotesUpdate, onError }: UseGroqProcessorPro
     try {
       const hasExistingNotes = currentNotes && currentNotes.trim().length > 0;
 
+      const existingHeadings = Array.from(noteStructure.current.keys());
       let userPrompt: string;
 
       if (hasExistingNotes) {
-        userPrompt = `EXISTING NOTES:
-${currentNotes}
+        userPrompt = `Given the following transcript chunk:
 
-NEW TRANSCRIPT:
-${transcriptToProcess}
+"${transcriptToProcess}"
 
-Extract information from the new transcript and output ONLY the sections being added or modified.
-If the topic exists, output that section with new bullets added.
-If it's a new topic, output the new section.
-OUTPUT ONLY PURE MARKDOWN - no explanations or commentary.`;
+EXISTING HEADINGS:
+${existingHeadings.map(h => `- ${h}`).join('\n')}
+
+TASK:
+1. If the transcript introduces NEW main topics not in existing headings, list them in "createdHeadings".
+2. If the transcript explains an existing topic, identify which heading and provide study-ready bullets under "updatedHeading".
+3. Never copy sentences - always summarize and rephrase.
+4. Place bullets under the correct heading for progressive fill-in.
+5. Bold key terms with **term**.
+
+Respond with ONLY valid JSON, no extra text.`;
       } else {
-        userPrompt = `TRANSCRIPT:
-${transcriptToProcess}
+        userPrompt = `Given the following transcript chunk:
 
-Create structured lecture notes from this transcript.
-OUTPUT ONLY PURE MARKDOWN NOTES - no explanations, no meta-commentary.
-Use ## headings, bullet points, and bold for key terms.`;
+"${transcriptToProcess}"
+
+TASK:
+Analyze this lecture transcript and create initial structure.
+1. If it introduces main topics, list them in "createdHeadings".
+2. If it explains topics with details, provide bullets under "updatedHeading".
+3. Never copy sentences - always summarize clearly.
+4. Bold key terms with **term**.
+
+Respond with ONLY valid JSON, no extra text.`;
       }
 
       const completion = await groq.chat.completions.create({
@@ -117,50 +150,60 @@ Use ## headings, bullet points, and bold for key terms.`;
         max_tokens: 1000,
         temperature: 0.1,
         top_p: 0.9,
+        response_format: { type: 'json_object' }
       });
 
-      let newContent = completion.choices[0]?.message?.content?.trim() || '';
+      const responseText = completion.choices[0]?.message?.content?.trim() || '';
 
-      if (!newContent || newContent.length < 5) {
+      if (!responseText) {
         setIsProcessing(false);
         return;
       }
 
-      newContent = newContent
-        .split('\n')
-        .filter(line => {
-          const trimmed = line.trim();
-          if (!trimmed) return true;
-          if (trimmed.startsWith('#')) return true;
-          if (trimmed.startsWith('-')) return true;
-          if (trimmed.startsWith('*')) return true;
-          if (/^[A-Z]/.test(trimmed) && trimmed.includes(':')) return false;
-          if (trimmed.toLowerCase().includes('not specified')) return false;
-          if (trimmed.toLowerCase().includes('example:')) return false;
-          if (trimmed.toLowerCase().includes('not mentioned')) return false;
-          return true;
-        })
-        .join('\n')
-        .trim();
+      console.log('AI Response:', responseText);
 
-      const wordCountInput = transcriptToProcess.split(/\s+/).length;
-      const wordCountOutput = newContent.split(/\s+/).length;
-
-      if (wordCountOutput > wordCountInput * 3) {
-        console.warn('Output too long - possible hallucination, skipping');
+      let analysis: TranscriptAnalysis;
+      try {
+        analysis = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
         setIsProcessing(false);
         return;
       }
 
-      if (hasExistingNotes) {
-        console.log('Merging with existing notes...');
-        const mergedNotes = applySmartDiff(currentNotes, newContent);
-        console.log('Merged notes length:', mergedNotes.length);
-        onNotesUpdate(mergedNotes);
-      } else {
-        console.log('Creating initial notes...');
-        onNotesUpdate(newContent);
+      if (analysis.confidence < 0.5) {
+        console.warn('Low confidence analysis, skipping:', analysis.uncertaintyReason);
+        setIsProcessing(false);
+        return;
       }
+
+      if (analysis.createdHeadings && analysis.createdHeadings.length > 0) {
+        analysis.createdHeadings.forEach(heading => {
+          if (!noteStructure.current.has(heading)) {
+            console.log('Creating new heading:', heading);
+            noteStructure.current.set(heading, []);
+          }
+        });
+      }
+
+      if (analysis.updatedHeading && analysis.bullets && analysis.bullets.length > 0) {
+        const heading = analysis.updatedHeading;
+        const existingBullets = noteStructure.current.get(heading) || [];
+
+        const newBullets = analysis.bullets.filter(bullet => {
+          const normalized = bullet.toLowerCase().trim();
+          return !existingBullets.some(eb => eb.toLowerCase().trim() === normalized);
+        });
+
+        if (newBullets.length > 0) {
+          console.log(`Adding ${newBullets.length} bullets to "${heading}"`);
+          noteStructure.current.set(heading, [...existingBullets, ...newBullets]);
+        }
+      }
+
+      const markdown = buildMarkdownFromStructure(noteStructure.current);
+      console.log('Updated markdown length:', markdown.length);
+      onNotesUpdate(markdown);
 
     } catch (error: any) {
       console.error('Groq processing error:', error);
@@ -180,6 +223,7 @@ Use ## headings, bullet points, and bold for key terms.`;
   const resetProcessor = useCallback(() => {
     lastProcessedTranscript.current = '';
     lastProcessTime.current = 0;
+    noteStructure.current.clear();
     if (processingTimeout.current) {
       clearTimeout(processingTimeout.current);
       processingTimeout.current = null;
@@ -193,3 +237,17 @@ Use ## headings, bullet points, and bold for key terms.`;
     queueLength: 0,
   };
 };
+
+function buildMarkdownFromStructure(structure: Map<string, string[]>): string {
+  let markdown = '';
+
+  structure.forEach((bullets, heading) => {
+    markdown += `## ${heading}\n`;
+    bullets.forEach(bullet => {
+      markdown += `- ${bullet}\n`;
+    });
+    markdown += '\n';
+  });
+
+  return markdown.trim();
+}
