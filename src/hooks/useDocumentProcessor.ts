@@ -3,10 +3,8 @@ import { groq } from '@/utils/groqClient';
 import {
   DocumentNode,
   DocumentState,
-  NodeEdit,
   createNode,
   buildDocumentState,
-  applyEdit,
   renderToMarkdown,
 } from '@/utils/documentStructure';
 
@@ -14,84 +12,64 @@ interface UseDocumentProcessorProps {
   onError: (error: string) => void;
 }
 
+interface AIEdit {
+  action: 'add_heading' | 'add_bullet' | 'add_subbullet' | 'edit_content' | 'delete_node';
+  parentKey?: string;
+  key?: string;
+  content?: string;
+  level?: number;
+  newContent?: string;
+}
+
 const SYSTEM_PROMPT = `You are an expert lecture note-taker creating structured, well-formatted notes in real-time.
 
-MARKDOWN SYNTAX RULES:
-- Headings: Use # for H1, ## for H2, ### for H3, etc. (always include space after #)
-- Bold: Use **text** for important terms and concepts
-- Italic: Use *text* for emphasis
-- Inline code: Use \`code\` for technical terms, variables, functions
-- Unordered lists: Use - for bullet points
-- Nested lists: Indent with 2 spaces for sub-bullets
+MARKDOWN FORMATTING RULES:
+- Use ## for main topic headings (level 2)
+- Use ### for sub-topics (level 3)
+- Use **text** to bold important terms, definitions, and key concepts
+- Use *text* for emphasis
+- Use \`code\` for technical terms, variables, function names
+- Keep bullet points concise and focused
 
 NOTE-TAKING GUIDELINES:
-1. Create clear section headings (##) for main topics
-2. Use sub-headings (###) for subtopics within sections
-3. Write concise bullet points for key facts and concepts
-4. Bold (**) technical terms, definitions, and important concepts
-5. Use inline code (\`) for code snippets, function names, variables
-6. Keep bullets focused and scannable
-7. Group related concepts under appropriate headings
-8. Never repeat information - check existing content first
-
-DOCUMENT STRUCTURE:
-- Each node has a unique "key" identifier
-- Use keys to reference which nodes to edit/add/delete
-- Always work with the full document structure
+1. Create clear section headings for main topics
+2. Use sub-headings for subtopics within sections
+3. Write focused bullet points for key facts
+4. Bold technical terms and important concepts
+5. Use inline code for technical items
+6. Never repeat information
+7. Group related concepts together
 
 OUTPUT FORMAT (JSON only):
 {
   "edits": [
     {
-      "action": "add",
-      "parentKey": "node_xxx",
-      "node": {
-        "type": "heading",
-        "content": "Topic Name",
-        "level": 2,
-        "children": []
-      }
+      "action": "add_heading",
+      "content": "Topic Name",
+      "level": 2
     },
     {
-      "action": "add",
-      "parentKey": "node_xxx",
-      "node": {
-        "type": "bullet",
-        "content": "Key point with **bold term** and \`code\`",
-        "level": 1,
-        "children": []
-      }
+      "action": "add_bullet",
+      "content": "Key point with **bold term** and \`code\`"
     },
     {
-      "action": "edit",
-      "key": "node_yyy",
-      "newContent": "Updated content with **formatting**"
-    },
-    {
-      "action": "delete",
-      "key": "node_zzz"
+      "action": "add_subbullet",
+      "content": "Sub-point or detail"
     }
   ]
 }
 
 EDIT ACTIONS:
-- "add": Create new node (provide parentKey and complete node object with type, content, level, children)
-- "edit": Modify existing node content (provide key and newContent)
-- "delete": Remove node (provide key)
-
-NODE TYPES:
-- "heading": Main section (level 2: ##)
-- "subheading": Sub-section (level 3: ###)
-- "bullet": Top-level bullet point
-- "subbullet": Nested bullet point (child of bullet)
-- "text": Plain text paragraph
+- "add_heading": Create a new section heading (level 2 or 3)
+- "add_bullet": Add a bullet point under the most recent heading
+- "add_subbullet": Add a nested bullet under the most recent bullet
 
 IMPORTANT:
-- Generate edits incrementally - only add new information or fix errors
-- Always check if content already exists before adding
+- Only add NEW information from the transcript
+- Check if content already exists before adding
 - Use proper markdown formatting in content
-- Keep document well-organized and scannable
-- Respond with ONLY valid JSON, no extra text`;
+- Be concise and organized
+- Respond with ONLY valid JSON`;
 
 export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -106,6 +84,8 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
   const minProcessInterval = 2000;
   const pendingTranscript = useRef<string>('');
   const sentenceCount = useRef<number>(0);
+  const currentHeadingRef = useRef<DocumentNode | null>(null);
+  const currentBulletRef = useRef<DocumentNode | null>(null);
 
   const processTranscript = useCallback(
     async (fullTranscript: string) => {
@@ -144,14 +124,12 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
 
       try {
         const currentMarkdown = renderToMarkdown(documentState.root);
-        const documentStructure = JSON.stringify({
-          root: documentState.root,
-          keys: Array.from(documentState.keyMap.keys()),
-        }, null, 2);
 
         const userPrompt = currentMarkdown.length > 0
-          ? `FULL TRANSCRIPT:\n"${fullTranscript}"\n\nCURRENT DOCUMENT STRUCTURE:\n${documentStructure}\n\nCURRENT NOTES (MARKDOWN):\n${currentMarkdown}\n\nTASK: Review the transcript and current notes. Generate edits to add new information, improve organization, or fix errors. Use proper markdown formatting. Only add content that isn't already present.`
-          : `FULL TRANSCRIPT:\n"${fullTranscript}"\n\nTASK: Create initial structured notes from this transcript. Use proper headings, bullets, and markdown formatting. Be concise and organized.`;
+          ? `FULL TRANSCRIPT:\n"${fullTranscript}"\n\nCURRENT NOTES:\n${currentMarkdown}\n\nTASK: Review the transcript and generate edits to add NEW information only. Use proper markdown formatting.`
+          : `FULL TRANSCRIPT:\n"${fullTranscript}"\n\nTASK: Create initial structured notes. Use headings, bullets, and proper markdown formatting.`;
+
+        console.log('Sending to AI...');
 
         const completion = await groq.chat.completions.create({
           messages: [
@@ -172,13 +150,13 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
           return;
         }
 
-        console.log('AI Response:', responseText.substring(0, 300) + '...');
+        console.log('AI Response received:', responseText.substring(0, 300));
 
-        let result: { edits: NodeEdit[] };
+        let result: { edits: AIEdit[] };
         try {
           result = JSON.parse(responseText);
         } catch (parseError) {
-          console.error('JSON parse error:', parseError);
+          console.error('JSON parse error:', parseError, responseText);
           setIsProcessing(false);
           return;
         }
@@ -186,12 +164,49 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
         if (result.edits && result.edits.length > 0) {
           console.log('Applying', result.edits.length, 'edits');
 
-          let newState = documentState;
+          const newRoot = JSON.parse(JSON.stringify(documentState.root));
+
           result.edits.forEach(edit => {
-            newState = applyEdit(newState, edit);
+            if (edit.action === 'add_heading' && edit.content) {
+              const heading = createNode(
+                edit.level === 3 ? 'subheading' : 'heading',
+                edit.content,
+                edit.level || 2,
+                []
+              );
+              newRoot.children.push(heading);
+              currentHeadingRef.current = heading;
+              currentBulletRef.current = null;
+              console.log('Added heading:', edit.content);
+            } else if (edit.action === 'add_bullet' && edit.content) {
+              if (currentHeadingRef.current) {
+                const bullet = createNode('bullet', edit.content, 1, []);
+                currentHeadingRef.current.children.push(bullet);
+                currentBulletRef.current = bullet;
+                console.log('Added bullet:', edit.content);
+              } else {
+                const heading = createNode('heading', 'Notes', 2, []);
+                const bullet = createNode('bullet', edit.content, 1, []);
+                heading.children.push(bullet);
+                newRoot.children.push(heading);
+                currentHeadingRef.current = heading;
+                currentBulletRef.current = bullet;
+                console.log('Added default heading and bullet:', edit.content);
+              }
+            } else if (edit.action === 'add_subbullet' && edit.content) {
+              if (currentBulletRef.current) {
+                const subbullet = createNode('subbullet', edit.content, 1, []);
+                currentBulletRef.current.children.push(subbullet);
+                console.log('Added subbullet:', edit.content);
+              }
+            }
           });
 
+          const newState = buildDocumentState(newRoot);
           setDocumentState(newState);
+          console.log('Document updated, total nodes:', newState.keyMap.size);
+        } else {
+          console.log('No edits received from AI');
         }
       } catch (error: any) {
         console.error('Processing error:', error);
@@ -218,6 +233,8 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
     lastProcessTime.current = 0;
     pendingTranscript.current = '';
     sentenceCount.current = 0;
+    currentHeadingRef.current = null;
+    currentBulletRef.current = null;
   }, []);
 
   const getMarkdown = useCallback(() => {
