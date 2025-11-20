@@ -1,96 +1,111 @@
-export interface NoteSection {
+export interface NoteNode {
   id: string;
   title: string;
-  level: number;
-  content: string[];
-  startIndex: number;
-  endIndex: number;
+  depth: number; // 0=root, 1=main topic, 2=subtopic
+  bullets: string[];
+  children: NoteNode[];
+  isEmpty: boolean; // Visual indicator for empty sections
+  createdAt: number; // Timestamp for ordering
 }
 
-export interface NoteStructure {
-  sections: NoteSection[];
-  fullText: string;
+export interface TranscriptAnalysis {
+  type: 'outline' | 'detail' | 'transition';
+  topics?: string[]; // For outline type
+  relatedTopic?: string; // For detail type
+  keyPoints?: string[]; // For detail type
+  confidence: number; // 0-1 score
 }
 
-export const parseNoteStructure = (markdown: string): NoteStructure => {
-  const lines = markdown.split('\n');
-  const sections: NoteSection[] = [];
-  let currentSection: NoteSection | null = null;
-  let sectionIdCounter = 0;
+// Normalize text for comparison
+export const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ');
+};
 
-  lines.forEach((line, index) => {
-    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+// Calculate semantic similarity between two strings (simple version)
+export const calculateSimilarity = (text1: string, text2: string): number => {
+  const norm1 = normalizeText(text1);
+  const norm2 = normalizeText(text2);
+  
+  // Exact match
+  if (norm1 === norm2) return 1.0;
+  
+  // Check if one contains the other
+  if (norm1.includes(norm2) || norm2.includes(norm1)) return 0.8;
+  
+  // Word overlap scoring
+  const words1 = new Set(norm1.split(' '));
+  const words2 = new Set(norm2.split(' '));
+  
+  const intersection = new Set([...words1].filter(x => words2.has(x)));
+  const union = new Set([...words1, ...words2]);
+  
+  // Jaccard similarity
+  return intersection.size / union.size;
+};
 
-    if (headingMatch) {
-      if (currentSection) {
-        currentSection.endIndex = index - 1;
-        sections.push(currentSection);
-      }
-
-      const level = headingMatch[1].length;
-      const title = headingMatch[2].trim();
-
-      currentSection = {
-        id: `section_${sectionIdCounter++}_${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
-        title,
-        level,
-        content: [],
-        startIndex: index,
-        endIndex: index,
-      };
-    } else if (currentSection && line.trim()) {
-      currentSection.content.push(line);
-    }
+// Flatten tree for searching
+export const flattenTree = (node: NoteNode): NoteNode[] => {
+  const result: NoteNode[] = [];
+  
+  if (node.title) {
+    result.push(node);
+  }
+  
+  node.children.forEach(child => {
+    result.push(...flattenTree(child));
   });
+  
+  return result;
+};
 
-  if (currentSection) {
-    currentSection.endIndex = lines.length - 1;
-    sections.push(currentSection);
+// Render tree to markdown with proper spacing
+export const renderToMarkdown = (node: NoteNode, level: number = 0): string => {
+  let output = '';
+  
+  // Render heading with proper spacing
+  if (node.title && level > 0) {
+    output += '#'.repeat(level) + ' ' + node.title + '\n\n';
+    
+    // If section is empty, show placeholder
+    if (node.isEmpty && node.bullets.length === 0 && node.children.length === 0) {
+      output += '*Waiting for details...*\n\n';
+    }
   }
-
-  return { sections, fullText: markdown };
-};
-
-export const rebuildMarkdown = (sections: NoteSection[]): string => {
-  return sections.map(section => {
-    const heading = '#'.repeat(section.level) + ' ' + section.title;
-    const content = section.content.join('\n');
-    return `${heading}\n${content}`;
-  }).join('\n\n');
-};
-
-export const findSectionByTopic = (
-  sections: NoteSection[],
-  topic: string
-): NoteSection | null => {
-  const normalizedTopic = topic.toLowerCase().replace(/[^a-z0-9\s]/g, '');
-
-  return sections.find(section => {
-    const normalizedTitle = section.title.toLowerCase().replace(/[^a-z0-9\s]/g, '');
-    return normalizedTitle.includes(normalizedTopic) || normalizedTopic.includes(normalizedTitle);
-  }) || null;
-};
-
-export const mergeSections = (
-  existingSections: NoteSection[],
-  newSection: NoteSection
-): NoteSection[] => {
-  const existingIndex = existingSections.findIndex(s =>
-    s.title.toLowerCase() === newSection.title.toLowerCase()
-  );
-
-  if (existingIndex >= 0) {
-    const merged = [...existingSections];
-    const existing = merged[existingIndex];
-
-    const uniqueContent = new Set([...existing.content, ...newSection.content]);
-    merged[existingIndex] = {
-      ...existing,
-      content: Array.from(uniqueContent),
-    };
-
-    return merged;
+  
+  // Render bullets
+  if (node.bullets.length > 0) {
+    node.bullets.forEach(bullet => {
+      const cleanBullet = bullet.trim().replace(/^[•\-\*]\s*/, '');
+      output += '- ' + cleanBullet + '\n';
+    });
+    output += '\n'; // Add spacing after bullets
   }
+  
+  // Recursively render children
+  node.children.forEach(child => {
+    output += renderToMarkdown(child, level + 1);
+  });
+  
+  return output;
+};
 
-  return [...existingSections, newSection];
+// Create empty node
+export const createNode = (
+  title: string,
+  depth: number,
+  isEmpty: boolean = false
+): NoteNode => {
+  return {
+    id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    title: title.trim(),
+    depth,
+    bullets: [],
+    children: [],
+    isEmpty,
+    createdAt: Date.now()
+  };
 };
