@@ -11,6 +11,7 @@ export const initializeGroq = () => {
   return new Groq({
     apiKey,
     dangerouslyAllowBrowser: true
+    
   });
 };
 
