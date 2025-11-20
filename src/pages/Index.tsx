@@ -23,6 +23,19 @@ const Index = () => {
   const { toast } = useToast();
   const { createNewSession, updateSession, finalizeSession } = useNoteStorage();
 
+  const handleError = (errorMsg: string) => {
+    setError(errorMsg);
+    toast({
+      title: 'Error',
+      description: errorMsg,
+      variant: 'destructive',
+    });
+  };
+
+  const { processTranscript, isProcessing, resetProcessor, streamState } = useStreamingNotes({
+    onError: handleError,
+  });
+
   const handleTranscript = (text: string) => {
     setTranscript(prev => {
       const newTranscript = [...prev, text];
@@ -44,22 +57,9 @@ const Index = () => {
     setInterimText(text);
   };
 
-  const handleError = (errorMsg: string) => {
-    setError(errorMsg);
-    toast({
-      title: 'Error',
-      description: errorMsg,
-      variant: 'destructive',
-    });
-  };
-
   const { isListening, isSupported, startListening, stopListening } = useSpeechRecognition({
     onTranscript: handleTranscript,
     onInterimTranscript: handleInterimTranscript,
-    onError: handleError,
-  });
-
-  const { processTranscript, isProcessing, resetProcessor, streamState } = useStreamingNotes({
     onError: handleError,
   });
 

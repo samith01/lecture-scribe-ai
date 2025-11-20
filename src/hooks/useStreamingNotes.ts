@@ -73,7 +73,7 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
   const lastProcessedTranscript = useRef<string>('');
   const lastProcessTime = useRef<number>(0);
   const processingTimeout = useRef<NodeJS.Timeout | null>(null);
-  const minProcessInterval = 8000;
+  const minProcessInterval = 5000;
   const noteStructureRef = useRef<Map<string, string[]>>(new Map());
   const pendingTranscriptBatch = useRef<string>('');
   const sentenceCount = useRef<number>(0);
@@ -102,12 +102,16 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
       }
 
       const newContent = fullTranscript.slice(lastProcessedTranscript.current.length);
-      pendingTranscriptBatch.current += ' ' + newContent;
 
-      const sentences = pendingTranscriptBatch.current.match(/[^.!?]+[.!?]+/g) || [];
-      sentenceCount.current += sentences.length;
+      if (newContent.trim().length > 0) {
+        pendingTranscriptBatch.current += ' ' + newContent;
+        const sentences = pendingTranscriptBatch.current.match(/[^.!?]+[.!?]+/g) || [];
+        sentenceCount.current = sentences.length;
+      }
 
-      if (sentenceCount.current < 2) {
+      const isFirstProcessing = lastProcessedTranscript.current.length === 0;
+
+      if (!isFirstProcessing && sentenceCount.current < 2 && fullTranscript.length < 100) {
         return;
       }
 
@@ -139,13 +143,15 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
           ? `FULL TRANSCRIPT SO FAR:\n"${fullTranscript}"\n\nCURRENT NOTES:\n${currentContent}\n\nTASK: Organize, condense, and update the full document. Look at the entire transcript and current notes. Generate incremental changes to improve structure, group related concepts, condense redundancy, and fix any issues. Think holistically about the best organization.`
           : `FULL TRANSCRIPT:\n"${fullTranscript}"\n\nTASK: Create initial well-organized lecture notes. Generate changes to build the structure.`;
 
+        console.log('Sending to AI - Transcript length:', fullTranscript.length, 'Current notes length:', currentContent.length);
+
         const completion = await groq.chat.completions.create({
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             { role: 'user', content: userPrompt },
           ],
           model: 'llama-3.1-8b-instant',
-          max_tokens: 1000,
+          max_tokens: 1500,
           temperature: 0.1,
           response_format: { type: 'json_object' },
         });
@@ -153,11 +159,12 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
         const responseText = completion.choices[0]?.message?.content?.trim() || '';
 
         if (!responseText) {
+          console.error('No response from AI');
           setIsProcessing(false);
           return;
         }
 
-        console.log('AI Response:', responseText);
+        console.log('AI Response received:', responseText.substring(0, 200) + '...');
 
         let result: { changes: TextChange[]; confidence: number };
         try {
