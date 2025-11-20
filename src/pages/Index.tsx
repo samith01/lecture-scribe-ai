@@ -43,9 +43,7 @@ const Index = () => {
       console.log('New transcript received:', text);
       console.log('Full transcript length:', fullTranscript.length);
 
-      setTimeout(() => {
-        processTranscript(fullTranscript);
-      }, 0);
+      processTranscript(fullTranscript);
 
       return newTranscript;
     });

@@ -68,7 +68,7 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
   const lastProcessedTranscript = useRef<string>('');
   const lastProcessTime = useRef<number>(0);
   const processingTimeout = useRef<NodeJS.Timeout | null>(null);
-  const minProcessInterval = 5000;
+  const minProcessInterval = 1000;
   const noteStructureRef = useRef<Map<string, string[]>>(new Map());
   const pendingTranscriptBatch = useRef<string>('');
   const sentenceCount = useRef<number>(0);
@@ -92,22 +92,10 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
         return;
       }
 
-      if (!fullTranscript || fullTranscript.trim().length < 20) {
-        return;
-      }
-
       const newContent = fullTranscript.slice(lastProcessedTranscript.current.length);
 
       if (newContent.trim().length > 0) {
         pendingTranscriptBatch.current += ' ' + newContent;
-        const sentences = pendingTranscriptBatch.current.match(/[^.!?]+[.!?]+/g) || [];
-        sentenceCount.current = sentences.length;
-      }
-
-      const isFirstProcessing = lastProcessedTranscript.current.length === 0;
-
-      if (!isFirstProcessing && sentenceCount.current < 2 && fullTranscript.length < 100) {
-        return;
       }
 
       const now = Date.now();
