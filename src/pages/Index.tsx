@@ -4,7 +4,7 @@ import { TranscriptPanel } from '@/components/TranscriptPanel';
 import { LiveNotesEditor } from '@/components/LiveNotesEditor';
 import { ExportMenu } from '@/components/ExportMenu';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
-import { useStreamingNotes } from '@/hooks/useStreamingNotes';
+import { useDocumentProcessor } from '@/hooks/useDocumentProcessor';
 import { useNoteStorage } from '@/hooks/useNoteStorage';
 import { useChatCorrections } from '@/hooks/useChatCorrections';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +31,7 @@ const Index = () => {
     });
   };
 
-  const { processTranscript, isProcessing, resetProcessor, streamState } = useStreamingNotes({
+  const { processTranscript, isProcessing, resetProcessor, getMarkdown, documentState } = useDocumentProcessor({
     onError: handleError,
   });
 
@@ -63,12 +63,13 @@ const Index = () => {
   });
 
   useEffect(() => {
-    if (streamState.content !== notesRef.current) {
-      notesRef.current = streamState.content;
-      setNotes(streamState.content);
-      updateSession({ notes: streamState.content });
+    const markdown = getMarkdown();
+    if (markdown !== notesRef.current) {
+      notesRef.current = markdown;
+      setNotes(markdown);
+      updateSession({ notes: markdown });
     }
-  }, [streamState.content, updateSession]);
+  }, [documentState, getMarkdown, updateSession]);
 
   const { processCorrectionMessage, isProcessing: isCorrecting } = useChatCorrections({
     currentNotes: notes,
@@ -145,7 +146,7 @@ const Index = () => {
     <div className="h-screen flex flex-col bg-background">
       <StatusBar
         isRecording={isListening}
-        isProcessing={isProcessing || streamState.isAnimating}
+        isProcessing={isProcessing}
         duration={duration}
         onToggleRecording={handleToggleRecording}
       />
@@ -172,13 +173,13 @@ const Index = () => {
             <div className="p-6 border-b border-border">
               <h2 className="text-xl font-bold text-foreground">Structured Notes</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {streamState.isAnimating ? 'AI is building your notes...' : 'AI-powered note structuring'}
+                {isProcessing ? 'AI is building your notes...' : 'AI-powered note structuring'}
               </p>
             </div>
             <LiveNotesEditor
-              content={streamState.content}
+              content={notes}
               operations={[]}
-              isAnimating={streamState.isAnimating}
+              isAnimating={false}
             />
           </div>
 
