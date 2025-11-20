@@ -160,10 +160,6 @@ const Landing = () => {
               <Check className="w-4 h-4 text-green-600" />
               <span>Lifetime Discount</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4 text-orange-600" />
-              <span className="font-semibold">{spotsRemaining} Spots Left</span>
-            </div>
           </div>
         </div>
       </section>
