@@ -3,9 +3,11 @@ import { StatusBar } from '@/components/StatusBar';
 import { TranscriptPanel } from '@/components/TranscriptPanel';
 import { NotesPanel } from '@/components/NotesPanel';
 import { ExportMenu } from '@/components/ExportMenu';
+import { ChatInput } from '@/components/ChatInput';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useGroqProcessor } from '@/hooks/useGroqProcessor';
 import { useNoteStorage } from '@/hooks/useNoteStorage';
+import { useChatCorrections } from '@/hooks/useChatCorrections';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -65,6 +67,20 @@ const Index = () => {
       notesRef.current = updatedNotes;
       setNotes(updatedNotes);
       updateSession({ notes: updatedNotes });
+    },
+    onError: handleError,
+  });
+
+  const { processCorrectionMessage, isProcessing: isCorrecting } = useChatCorrections({
+    currentNotes: notes,
+    onNotesUpdate: (correctedNotes) => {
+      notesRef.current = correctedNotes;
+      setNotes(correctedNotes);
+      updateSession({ notes: correctedNotes });
+      toast({
+        title: 'Notes Updated',
+        description: 'Your correction has been applied.',
+      });
     },
     onError: handleError,
   });
@@ -144,25 +160,32 @@ const Index = () => {
         </div>
       )}
 
-      <div className="flex-1 flex overflow-hidden relative">
-        <div className="w-2/5">
-          <TranscriptPanel
-            transcript={transcript}
-            isRecording={isListening}
-            interimText={interimText}
-          />
-        </div>
-        <div className="flex-1">
-          <NotesPanel
-            notes={notes}
-            onNotesChange={setNotes}
-            isProcessing={isProcessing}
-          />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex overflow-hidden relative">
+          <div className="w-2/5">
+            <TranscriptPanel
+              transcript={transcript}
+              isRecording={isListening}
+              interimText={interimText}
+            />
+          </div>
+          <div className="flex-1">
+            <NotesPanel
+              notes={notes}
+              onNotesChange={setNotes}
+              isProcessing={isProcessing}
+            />
+          </div>
+
+          {!isListening && (notes || transcript.length > 0) && (
+            <ExportMenu notes={notes} transcript={transcript.join(' ')} />
+          )}
         </div>
 
-        {!isListening && (notes || transcript.length > 0) && (
-          <ExportMenu notes={notes} transcript={transcript.join(' ')} />
-        )}
+        <ChatInput
+          onSendMessage={processCorrectionMessage}
+          disabled={!notes || isCorrecting || isListening}
+        />
       </div>
     </div>
   );

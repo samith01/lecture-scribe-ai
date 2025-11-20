@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 interface NotesPanelProps {
@@ -10,12 +10,27 @@ interface NotesPanelProps {
 export const NotesPanel = ({ notes, onNotesChange, isProcessing }: NotesPanelProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedNotes, setEditedNotes] = useState(notes);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isUserScrolling = useRef(false);
 
   useEffect(() => {
     if (!isEditing) {
       setEditedNotes(notes);
     }
   }, [notes, isEditing]);
+
+  useEffect(() => {
+    if (!isUserScrolling.current && scrollRef.current && !isEditing) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [notes, isEditing]);
+
+  const handleScroll = () => {
+    if (scrollRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+      isUserScrolling.current = scrollTop + clientHeight < scrollHeight - 50;
+    }
+  };
 
   const handleSave = () => {
     onNotesChange(editedNotes);
@@ -62,7 +77,11 @@ export const NotesPanel = ({ notes, onNotesChange, isProcessing }: NotesPanelPro
         )}
       </div>
       
-      <div className="flex-1 overflow-y-auto p-8">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-8"
+      >
         {!notes && !isProcessing && (
           <div className="text-center text-muted-foreground py-12">
             <p>Notes will appear here as you speak</p>
