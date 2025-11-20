@@ -224,3 +224,68 @@ export class SmartNoteBuilder {
     return count;
   }
 }
+
+export function applySmartDiff(existingNotes: string, newContent: string): string {
+  if (!newContent || newContent.trim().length === 0) {
+    return existingNotes;
+  }
+
+  if (!existingNotes || existingNotes.trim().length === 0) {
+    return newContent;
+  }
+
+  const existingSections = parseMarkdownSections(existingNotes);
+  const newSections = parseMarkdownSections(newContent);
+
+  const merged = new Map<string, string[]>(existingSections);
+
+  newSections.forEach((bullets, heading) => {
+    if (merged.has(heading)) {
+      const existingBullets = merged.get(heading)!;
+      const uniqueNewBullets = bullets.filter(bullet => {
+        const normalized = bullet.toLowerCase().trim();
+        return !existingBullets.some(eb => eb.toLowerCase().trim() === normalized);
+      });
+      merged.set(heading, [...existingBullets, ...uniqueNewBullets]);
+    } else {
+      merged.set(heading, bullets);
+    }
+  });
+
+  let result = '';
+  merged.forEach((bullets, heading) => {
+    result += `${heading}\n`;
+    bullets.forEach(bullet => {
+      result += `${bullet}\n`;
+    });
+    result += '\n';
+  });
+
+  return result.trim();
+}
+
+function parseMarkdownSections(markdown: string): Map<string, string[]> {
+  const sections = new Map<string, string[]>();
+  const lines = markdown.split('\n');
+  let currentHeading = '';
+  let currentBullets: string[] = [];
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('##')) {
+      if (currentHeading && currentBullets.length > 0) {
+        sections.set(currentHeading, currentBullets);
+      }
+      currentHeading = trimmed;
+      currentBullets = [];
+    } else if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
+      currentBullets.push(line);
+    }
+  });
+
+  if (currentHeading && currentBullets.length > 0) {
+    sections.set(currentHeading, currentBullets);
+  }
+
+  return sections;
+}
