@@ -1,49 +1,27 @@
-import { useState, useCallback, useRef } from 'react';
-import { groq } from '@/utils/groqClient';
+import { useState, useCallback, useRef } from "react";
+import { groq } from "@/utils/groqClient";
 
-const SYSTEM_PROMPT = `You are an expert in structuring classroom lecture notes for students.
-
-Your job is to analyze transcript chunks and produce structured, progressive lecture notes.
-
-CRITICAL RULES:
-1. If the transcript introduces MAIN TOPICS, return a list of section headings ONLY.
-2. If the transcript explains a topic, identify the correct heading and provide study-ready bullet points.
-3. NEVER copy sentences from the transcript - always summarize and rephrase for clarity.
-4. Progressively fill in notes: Add bullets under existing headings, don't duplicate headings.
-5. Use clear, descriptive headings relevant to students (e.g., "Supervised Learning", "Neural Networks").
-6. Always format output as valid, structured JSON.
-
-OUTPUT FORMAT (JSON only):
-{
-  "type": "outline" or "update",
-  "createdHeadings": ["New Topic 1", "New Topic 2"],
-  "updatedHeading": "Existing Topic Name",
-  "bullets": [
-    "Clear, concise bullet point.",
-    "Another key point with **bold terms** for emphasis."
-  ],
-  "confidence": 0.95
-}
+// SYSTEM PROMPT: comprehensive, structured, no info dropped.
+const SYSTEM_PROMPT = `You are an expert live note-taker for technical lectures.
+Your job is to convert the transcript below into logically structured, beautiful, and COMPLETE notes.
 
 RULES:
-- "type": "outline" when only creating headings, "update" when adding details
-- "createdHeadings": Only NEW sections added in this chunk
-- "updatedHeading": The heading under which bullets should be inserted
-- "bullets": Only new bullets, never repeat prior content
-- "confidence": 0.0-1.0, set below 0.5 if uncertain
-- Use clear wording, never raw transcript sentences
-- Bold key terms with **term**
+- Do NOT omit any important point, term, statistic, or example from the transcript.
+- Use '##' for main sections (topic or concept names).
+- Use '-' for main bullet points. Use '  -' (two spaces) for subpoints/examples.
+- Use bold (**term**) for important technical words or definitions.
+- REVISE: If new content relates to an earlier topic, edit that section (not just add to the end).
+- Preserve logical order (Intro, key points, examples, conclusion).
+- DO NOT repeat the same bullet unless a new angle is provided.
+- Include context if a sentence is incomplete or fragmented.
+- ONLY use information actually present in the transcript (no invention, no summaries beyond what was said).
+- If a word or phrase in the transcript appears to be misheard, garbled, or nonsensical due to STT errors (for example, unusual words, abrupt topic switches, or words that do not fit the subject), use the rest of the transcript to infer and silently correct it to the most likely intended meaning.
+- Prefer technical accuracy. Fix obvious errors (e.g., "phtosyntesis" → "photosynthesis", "JavaScipt" → "JavaScript").
+- If a word is ambiguous but could be guessed from strong context (e.g. “return value of a component” and the transcript says “returned values of a compoment”), standardize to the correct, expected technical term.
+- DO NOT invent information or "fix" unless you are confident from context. If uncertain, keep the original phrase and mark it with (?) or in parentheses.
+- Do NOT add commentary about corrections, just output the final, clean notes as if you heard the correct statement in the first place.
 
-Respond with ONLY valid JSON, no extra text.`;
-
-interface TranscriptAnalysis {
-  type: 'outline' | 'update';
-  createdHeadings?: string[];
-  updatedHeading?: string;
-  bullets?: string[];
-  confidence: number;
-  uncertaintyReason?: string;
-}
+`;
 
 interface UseGroqProcessorProps {
   onNotesUpdate: (notes: string) => void;
@@ -52,202 +30,75 @@ interface UseGroqProcessorProps {
 
 export const useGroqProcessor = ({ onNotesUpdate, onError }: UseGroqProcessorProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const lastProcessedTranscript = useRef<string>('');
-  const processingTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [queue, setQueue] = useState<string[]>([]);
   const lastProcessTime = useRef<number>(0);
-  const minProcessInterval = 8000;
-  const noteStructure = useRef<Map<string, string[]>>(new Map());
+  const processingInterval = 12000; // you can tune this to desired refresh speed
 
+  // Persist full transcript/content in your parent component, pass in here
   const processTranscript = useCallback(async (
-    recentTranscript: string,
-    currentNotes: string,
-    fullTranscript: string
+    fullTranscript: string // MUST be all transcript so far
   ) => {
     if (!groq) {
-      onError('Groq API not configured. Please add VITE_GROQ_API_KEY to your .env file');
+      onError("Groq API not configured. Please add your API key.");
       return;
     }
 
-    if (!fullTranscript || fullTranscript.trim().length < 20) {
-      return;
-    }
-
+    // Throttle rapid requests for performance/cost
     const now = Date.now();
-    if (now - lastProcessTime.current < minProcessInterval) {
-      if (processingTimeout.current) {
-        clearTimeout(processingTimeout.current);
-      }
-
-      processingTimeout.current = setTimeout(() => {
-        processTranscript(recentTranscript, currentNotes, fullTranscript);
-      }, minProcessInterval - (now - lastProcessTime.current));
-
+    if (now - lastProcessTime.current < processingInterval) {
+      setQueue((prev) => [...prev, fullTranscript]);
       return;
     }
 
-    const transcriptToProcess = fullTranscript.slice(lastProcessedTranscript.current.length);
-
-    console.log('Processing check:', {
-      lastProcessedLength: lastProcessedTranscript.current.length,
-      currentLength: fullTranscript.length,
-      newContentLength: transcriptToProcess.length,
-      hasExistingNotes: currentNotes.length > 0
-    });
-
-    if (transcriptToProcess.trim().length < 15) {
-      console.log('Skipping: new content too short');
-      return;
-    }
-
-    console.log('Starting AI processing...');
     setIsProcessing(true);
     lastProcessTime.current = now;
-    lastProcessedTranscript.current = fullTranscript;
 
     try {
-      const hasExistingNotes = currentNotes && currentNotes.trim().length > 0;
+      const userPrompt = `LECTURE TRANSCRIPT:
+${fullTranscript}
 
-      const existingHeadings = Array.from(noteStructure.current.keys());
-      let userPrompt: string;
-
-      if (hasExistingNotes) {
-        userPrompt = `Given the following transcript chunk:
-
-"${transcriptToProcess}"
-
-EXISTING HEADINGS:
-${existingHeadings.map(h => `- ${h}`).join('\n')}
-
-TASK:
-1. If the transcript introduces NEW main topics not in existing headings, list them in "createdHeadings".
-2. If the transcript explains an existing topic, identify which heading and provide study-ready bullets under "updatedHeading".
-3. Never copy sentences - always summarize and rephrase.
-4. Place bullets under the correct heading for progressive fill-in.
-5. Bold key terms with **term**.
-
-Respond with ONLY valid JSON, no extra text.`;
-      } else {
-        userPrompt = `Given the following transcript chunk:
-
-"${transcriptToProcess}"
-
-TASK:
-Analyze this lecture transcript and create initial structure.
-1. If it introduces main topics, list them in "createdHeadings".
-2. If it explains topics with details, provide bullets under "updatedHeading".
-3. Never copy sentences - always summarize clearly.
-4. Bold key terms with **term**.
-
-Respond with ONLY valid JSON, no extra text.`;
-      }
+TASK: Using only the transcript above, write the full, beautiful notes so far, following all note-taking rules. Never drop factual or technical info. Don't write explanations about what you are doing—output ONLY the actual notes document in markdown.`;
 
       const completion = await groq.chat.completions.create({
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt }
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt }
         ],
-        model: 'llama-3.1-8b-instant',
-        max_tokens: 1000,
-        temperature: 0.1,
-        top_p: 0.9,
-        response_format: { type: 'json_object' }
+        model: "llama-3.1-8b-instant", // Or another Groq-supported model
+        max_tokens: 2000,
+        temperature: 0.11,
+        top_p: 0.8,
       });
 
-      const responseText = completion.choices[0]?.message?.content?.trim() || '';
+      const updatedNotes = completion.choices[0]?.message?.content?.trim() || "";
 
-      if (!responseText) {
-        setIsProcessing(false);
-        return;
+      // Additional check: don't show if it's almost empty (sometimes LLM outputs nonsense if input is too minimal)
+      if (updatedNotes && updatedNotes.replace(/[^a-zA-Z0-9]+/g, "").length > 10) {
+        onNotesUpdate(updatedNotes);
       }
-
-      console.log('AI Response:', responseText);
-
-      let analysis: TranscriptAnalysis;
-      try {
-        analysis = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        setIsProcessing(false);
-        return;
-      }
-
-      if (analysis.confidence < 0.5) {
-        console.warn('Low confidence analysis, skipping:', analysis.uncertaintyReason);
-        setIsProcessing(false);
-        return;
-      }
-
-      if (analysis.createdHeadings && analysis.createdHeadings.length > 0) {
-        analysis.createdHeadings.forEach(heading => {
-          if (!noteStructure.current.has(heading)) {
-            console.log('Creating new heading:', heading);
-            noteStructure.current.set(heading, []);
-          }
-        });
-      }
-
-      if (analysis.updatedHeading && analysis.bullets && analysis.bullets.length > 0) {
-        const heading = analysis.updatedHeading;
-        const existingBullets = noteStructure.current.get(heading) || [];
-
-        const newBullets = analysis.bullets.filter(bullet => {
-          const normalized = bullet.toLowerCase().trim();
-          return !existingBullets.some(eb => eb.toLowerCase().trim() === normalized);
-        });
-
-        if (newBullets.length > 0) {
-          console.log(`Adding ${newBullets.length} bullets to "${heading}"`);
-          noteStructure.current.set(heading, [...existingBullets, ...newBullets]);
-        }
-      }
-
-      const markdown = buildMarkdownFromStructure(noteStructure.current);
-      console.log('Updated markdown length:', markdown.length);
-      onNotesUpdate(markdown);
-
     } catch (error: any) {
-      console.error('Groq processing error:', error);
-
-      if (error?.status === 429) {
-        onError('Rate limit reached. Please wait a moment before continuing.');
-      } else if (error?.status === 401) {
-        onError('Invalid API key. Please check your Groq API configuration.');
-      } else {
-        onError(`AI processing error: ${error?.message || 'Unknown error'}`);
-      }
+      onError(`AI processing error: ${error.message || "Unknown error"}`);
     } finally {
       setIsProcessing(false);
     }
   }, [onNotesUpdate, onError]);
 
+  // Optional: batch queue support
+  const processQueue = useCallback(async (fullTranscript: string) => {
+    if (queue.length === 0 || !groq) return;
+    setQueue([]);
+    await processTranscript(fullTranscript);
+  }, [queue, processTranscript]);
+
   const resetProcessor = useCallback(() => {
-    lastProcessedTranscript.current = '';
-    lastProcessTime.current = 0;
-    noteStructure.current.clear();
-    if (processingTimeout.current) {
-      clearTimeout(processingTimeout.current);
-      processingTimeout.current = null;
-    }
+    setQueue([]);
   }, []);
 
   return {
     processTranscript,
-    isProcessing,
+    processQueue,
     resetProcessor,
-    queueLength: 0,
+    isProcessing,
+    queueLength: queue.length,
   };
 };
-
-function buildMarkdownFromStructure(structure: Map<string, string[]>): string {
-  let markdown = '';
-
-  structure.forEach((bullets, heading) => {
-    markdown += `## ${heading}\n`;
-    bullets.forEach(bullet => {
-      markdown += `- ${bullet}\n`;
-    });
-    markdown += '\n';
-  });
-
-  return markdown.trim();
-}
