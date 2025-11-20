@@ -15,6 +15,13 @@ Your job:
 - Use **bold** for terminology, and `inline code` for code-related items.
 - Always output only the notes—the distillation a real student would create, not explanations of your actions or summaries that leave out technical content.
 - Correct any grammatical or obvious speech-to-text errors by context, but ONLY if clearly wrong.
+Do NOT repeat content already present in the notes, even if phrased differently. 
+If the same idea appears twice in the transcript, only include it once in the notes—under the most appropriate heading.
+Always check if a bullet, example, or definition is already noted before adding.
+If a section or heading was already created (even if the transcript words it differently), do NOT create it again.
+Combine and merge related information instead of making multiple similar entries.
+Never list the same fact in more than one place, unless it’s truly part of multiple different concepts.
+
 `;
 
 interface UseGroqProcessorProps {
