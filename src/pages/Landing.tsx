@@ -1,15 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Check, Play, ArrowRight, Zap, Clock, Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useSearchParams } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import PaymentSuccessModal from '@/components/PaymentSuccessModal';
 
 const Landing = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [paidUserEmail, setPaidUserEmail] = useState<string | undefined>();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const spotsRemaining = 47;
+
+  useEffect(() => {
+    const checkPaymentSuccess = async () => {
+      const paymentStatus = searchParams.get('payment');
+
+      if (paymentStatus === 'success') {
+        const { data } = await supabase
+          .from('beta_signups')
+          .select('email')
+          .eq('payment_status', 'completed')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (data?.email) {
+          setPaidUserEmail(data.email);
+        }
+
+        setShowSuccessModal(true);
+
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('payment');
+        setSearchParams(newSearchParams, { replace: true });
+      }
+    };
+
+    checkPaymentSuccess();
+  }, [searchParams, setSearchParams]);
 
   const handleCheckout = async () => {
     if (!email || !email.includes('@')) {
@@ -58,6 +92,12 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <PaymentSuccessModal
+        open={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        email={paidUserEmail}
+      />
+
       <nav className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -307,7 +347,7 @@ const Landing = () => {
 
       <footer className="border-t bg-slate-50 py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-8">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Zap className="w-5 h-5 text-white" />
@@ -315,19 +355,51 @@ const Landing = () => {
               <span className="font-bold text-lg">NoteSync AI</span>
             </div>
 
-            <div className="flex gap-6 text-sm text-slate-600">
+            <div className="flex flex-col sm:flex-row gap-6 text-sm text-slate-600">
               <a href="mailto:support@notesync.ai" className="hover:text-blue-600">
-                Contact
+                Contact Support
               </a>
               <a href="#" className="hover:text-blue-600">
-                Privacy
+                Privacy Policy
               </a>
               <a href="#" className="hover:text-blue-600">
-                Terms
+                Terms of Service
               </a>
               <a href="https://discord.gg/notesync" className="hover:text-blue-600">
                 Discord Community
               </a>
+            </div>
+          </div>
+
+          <div className="border-t pt-8 space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+              <h4 className="font-semibold text-slate-900 mb-2">Refund Policy</h4>
+              <p className="text-slate-600">
+                We offer a 30-day money-back guarantee. If you're not satisfied with your beta access,
+                contact us at{' '}
+                <a href="mailto:support@notesync.ai" className="text-blue-600 hover:underline font-medium">
+                  support@notesync.ai
+                </a>{' '}
+                for a full refund, no questions asked.
+              </p>
+            </div>
+
+            <div className="bg-slate-100 rounded-lg p-4 text-sm">
+              <h4 className="font-semibold text-slate-900 mb-2">Access Timeline</h4>
+              <p className="text-slate-600">
+                Beta access will be granted within two weeks of purchase. We're onboarding users in small
+                batches to ensure the best experience. You'll receive an email with your access credentials.
+              </p>
+            </div>
+
+            <div className="text-sm text-slate-600">
+              <p className="mb-2">
+                <strong>Questions?</strong> Email us at{' '}
+                <a href="mailto:support@notesync.ai" className="text-blue-600 hover:underline">
+                  support@notesync.ai
+                </a>
+              </p>
+              <p>We typically respond within 24 hours.</p>
             </div>
           </div>
 
