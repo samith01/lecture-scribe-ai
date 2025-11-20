@@ -2,18 +2,65 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle2, Mail, MessageSquare, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Mail, MessageSquare, ArrowRight, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const Success = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [email, setEmail] = useState(searchParams.get('email') || '');
+  const [email, setEmail] = useState('');
+  const [isVerifying, setIsVerifying] = useState(true);
+  const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
-    if (!email) {
-      navigate('/');
-    }
-  }, [email, navigate]);
+    const verifyPayment = async () => {
+      if (!sessionId) {
+        navigate('/');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('beta_signups')
+          .select('email')
+          .eq('stripe_payment_intent_id', sessionId)
+          .maybeSingle();
+
+        if (error || !data) {
+          const allSignups = await supabase
+            .from('beta_signups')
+            .select('email, stripe_payment_intent_id')
+            .eq('payment_status', 'completed')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (allSignups.data?.email) {
+            setEmail(allSignups.data.email);
+          }
+        } else {
+          setEmail(data.email);
+        }
+      } catch (err) {
+        console.error('Error verifying payment:', err);
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    verifyPayment();
+  }, [sessionId, navigate]);
+
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-lg text-slate-600">Verifying your payment...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center px-4">

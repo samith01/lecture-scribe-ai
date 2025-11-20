@@ -2,22 +2,58 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Check, Play, ArrowRight, Zap, Clock, Download } from 'lucide-react';
+import { Check, Play, ArrowRight, Zap, Clock, Download, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Landing = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
   const spotsRemaining = 47;
 
   const handleCheckout = async () => {
     if (!email || !email.includes('@')) {
-      alert('Please enter a valid email address');
+      toast({
+        title: 'Invalid Email',
+        description: 'Please enter a valid email address',
+        variant: 'destructive',
+      });
       return;
     }
 
     setIsLoading(true);
 
-    window.location.href = '/checkout?email=' + encodeURIComponent(email);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to start checkout. Please try again.',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -67,8 +103,17 @@ const Landing = () => {
               size="lg"
               className="h-12 px-8 text-lg bg-blue-600 hover:bg-blue-700"
             >
-              Get Beta Access - $5
-              <ArrowRight className="ml-2 w-5 h-5" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  Get Beta Access - $5
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </>
+              )}
             </Button>
           </div>
 
@@ -221,8 +266,17 @@ const Landing = () => {
               size="lg"
               className="h-14 px-10 text-lg bg-white text-blue-600 hover:bg-slate-100"
             >
-              Get Beta Access Now
-              <ArrowRight className="ml-2 w-5 h-5" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  Get Beta Access Now
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </>
+              )}
             </Button>
           </div>
 
