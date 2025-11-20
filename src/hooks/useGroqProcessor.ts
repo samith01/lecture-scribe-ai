@@ -2,25 +2,19 @@ import { useState, useCallback, useRef } from "react";
 import { groq } from "@/utils/groqClient";
 
 // SYSTEM PROMPT: comprehensive, structured, no info dropped.
-const SYSTEM_PROMPT = `You are an expert live note-taker for technical lectures.
-Your job is to convert the transcript below into logically structured, beautiful, and COMPLETE notes.
+const SYSTEM_PROMPT = `You are a computer science student attending a live lecture.
 
-RULES:
-- Do NOT omit any important point, term, statistic, or example from the transcript.
-- Use '##' for main sections (topic or concept names).
-- Use '-' for main bullet points. Use '  -' (two spaces) for subpoints/examples.
-- Use bold (**term**) for important technical words or definitions.
-- REVISE: If new content relates to an earlier topic, edit that section (not just add to the end).
-- Preserve logical order (Intro, key points, examples, conclusion).
-- DO NOT repeat the same bullet unless a new angle is provided.
-- Include context if a sentence is incomplete or fragmented.
-- ONLY use information actually present in the transcript (no invention, no summaries beyond what was said).
-- If a word or phrase in the transcript appears to be misheard, garbled, or nonsensical due to STT errors (for example, unusual words, abrupt topic switches, or words that do not fit the subject), use the rest of the transcript to infer and silently correct it to the most likely intended meaning.
-- Prefer technical accuracy. Fix obvious errors (e.g., "phtosyntesis" → "photosynthesis", "JavaScipt" → "JavaScript").
-- If a word is ambiguous but could be guessed from strong context (e.g. “return value of a component” and the transcript says “returned values of a compoment”), standardize to the correct, expected technical term.
-- DO NOT invent information or "fix" unless you are confident from context. If uncertain, keep the original phrase and mark it with (?) or in parentheses.
-- Do NOT add commentary about corrections, just output the final, clean notes as if you heard the correct statement in the first place.
-
+Your job:
+- Take notes just like a top student would in real time, focusing on what would help for studying later.
+- Capture only the key facts, techniques, definitions, process summaries, lists of best practices, and illustrative examples.
+- Leave out general filler, unnecessary conversational fragments, and "here's what I think" statements.
+- Use classic notes structure: clear sections (##), concise one-line bullets for each main idea, and sub-bullets for fine details.
+- Err on the side of brevity and clarity—NOT transcript copying and NOT summarizing away technical specifics.
+- If a point is important, restate it concisely (do not rephrase all transcript text).
+- When multiple related points are made, combine/condense them into well-organized bullets.
+- Use **bold** for terminology, and `inline code` for code-related items.
+- Always output only the notes—the distillation a real student would create, not explanations of your actions or summaries that leave out technical content.
+- Correct any grammatical or obvious speech-to-text errors by context, but ONLY if clearly wrong.
 `;
 
 interface UseGroqProcessorProps {
@@ -66,8 +60,7 @@ TASK: Using only the transcript above, write the full, beautiful notes so far, f
         ],
         model: "llama-3.1-8b-instant", // Or another Groq-supported model
         max_tokens: 2000,
-        temperature: 0.11,
-        top_p: 0.8,
+        temperature: 0.2,
       });
 
       const updatedNotes = completion.choices[0]?.message?.content?.trim() || "";
