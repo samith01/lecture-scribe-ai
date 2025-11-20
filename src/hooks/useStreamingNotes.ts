@@ -12,17 +12,22 @@ interface UseStreamingNotesProps {
   onError: (error: string) => void;
 }
 
-const SYSTEM_PROMPT = `You are an expert in structuring classroom lecture notes for students.
+const SYSTEM_PROMPT = `You are an expert lecture note-taker. Your job is to organize, condense, and update the FULL lecture notes document.
 
-Analyze the transcript and produce INCREMENTAL changes to build up notes progressively.
-
-CRITICAL RULES:
-1. Output ONLY valid JSON with incremental changes
-2. Each change should be a discrete action (add heading, add bullet, edit line)
-3. NEVER regenerate entire notes - only output NEW changes since last update
-4. Organize related content under appropriate headings
+CRITICAL INSTRUCTIONS:
+1. You will receive the FULL TRANSCRIPT so far and the CURRENT NOTES
+2. Your task: Organize, condense, and improve the ENTIRE document—not just append
+3. Look at the full context to:
+   - Group related concepts together under proper headings
+   - Condense redundant information
+   - Improve clarity and structure
+   - Fix any misheard words using full context
+   - Reorganize sections if a better structure emerges
+4. Output INCREMENTAL CHANGES to transform current notes into the improved version
 5. Use clear, study-ready language (never copy raw transcript)
 6. Bold key terms with **term**
+
+Your output should be INCREMENTAL CHANGES that will be animated character-by-character:
 
 OUTPUT FORMAT (JSON only):
 {
@@ -36,6 +41,11 @@ OUTPUT FORMAT (JSON only):
       "type": "add_bullet",
       "bullet": "A subset of **artificial intelligence** focused on learning from data.",
       "sectionHeading": "Machine Learning"
+    },
+    {
+      "type": "edit_line",
+      "lineIndex": 5,
+      "newText": "- Improved and condensed explanation"
     }
   ],
   "confidence": 0.95
@@ -44,8 +54,10 @@ OUTPUT FORMAT (JSON only):
 CHANGE TYPES:
 - "add_heading": Create a new section heading
 - "add_bullet": Add a bullet point under a section
-- "edit_line": Modify existing text (provide lineIndex and newText)
-- "delete_line": Remove a line (provide lineIndex)
+- "edit_line": Modify existing text at lineIndex
+- "delete_line": Remove a line at lineIndex
+
+Think: What changes transform the current notes into a better-organized, condensed version?
 
 Respond with ONLY valid JSON, no extra text.`;
 
@@ -63,6 +75,8 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
   const processingTimeout = useRef<NodeJS.Timeout | null>(null);
   const minProcessInterval = 8000;
   const noteStructureRef = useRef<Map<string, string[]>>(new Map());
+  const pendingTranscriptBatch = useRef<string>('');
+  const sentenceCount = useRef<number>(0);
 
   useEffect(() => {
     animatorRef.current = new TextStreamAnimator((state) => {
@@ -87,6 +101,16 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
         return;
       }
 
+      const newContent = fullTranscript.slice(lastProcessedTranscript.current.length);
+      pendingTranscriptBatch.current += ' ' + newContent;
+
+      const sentences = pendingTranscriptBatch.current.match(/[^.!?]+[.!?]+/g) || [];
+      sentenceCount.current += sentences.length;
+
+      if (sentenceCount.current < 2) {
+        return;
+      }
+
       const now = Date.now();
       if (now - lastProcessTime.current < minProcessInterval) {
         if (processingTimeout.current) {
@@ -100,24 +124,20 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
         return;
       }
 
-      const transcriptToProcess = fullTranscript.slice(lastProcessedTranscript.current.length);
-
-      if (transcriptToProcess.trim().length < 15) {
-        return;
-      }
-
-      console.log('Processing new transcript chunk:', transcriptToProcess.length, 'chars');
+      console.log('Processing full transcript:', fullTranscript.length, 'chars');
+      console.log('Batched sentences:', sentenceCount.current);
       setIsProcessing(true);
       lastProcessTime.current = now;
       lastProcessedTranscript.current = fullTranscript;
+      pendingTranscriptBatch.current = '';
+      sentenceCount.current = 0;
 
       try {
-        const existingHeadings = Array.from(noteStructureRef.current.keys());
         const currentContent = animatorRef.current.getCurrentContent();
 
-        const userPrompt = existingHeadings.length > 0
-          ? `EXISTING HEADINGS:\n${existingHeadings.map(h => `- ${h}`).join('\n')}\n\nNEW TRANSCRIPT:\n"${transcriptToProcess}"\n\nGenerate ONLY the NEW changes needed to add this content. Do not regenerate existing content.`
-          : `TRANSCRIPT:\n"${transcriptToProcess}"\n\nGenerate initial structure with headings and bullets.`;
+        const userPrompt = currentContent.length > 0
+          ? `FULL TRANSCRIPT SO FAR:\n"${fullTranscript}"\n\nCURRENT NOTES:\n${currentContent}\n\nTASK: Organize, condense, and update the full document. Look at the entire transcript and current notes. Generate incremental changes to improve structure, group related concepts, condense redundancy, and fix any issues. Think holistically about the best organization.`
+          : `FULL TRANSCRIPT:\n"${fullTranscript}"\n\nTASK: Create initial well-organized lecture notes. Generate changes to build the structure.`;
 
         const completion = await groq.chat.completions.create({
           messages: [
@@ -193,6 +213,8 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
     lastProcessedTranscript.current = '';
     lastProcessTime.current = 0;
     noteStructureRef.current.clear();
+    pendingTranscriptBatch.current = '';
+    sentenceCount.current = 0;
 
     if (animatorRef.current) {
       animatorRef.current.clear();
