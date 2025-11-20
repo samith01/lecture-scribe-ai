@@ -3,7 +3,6 @@ import { StatusBar } from '@/components/StatusBar';
 import { TranscriptPanel } from '@/components/TranscriptPanel';
 import { LiveNotesEditor } from '@/components/LiveNotesEditor';
 import { ExportMenu } from '@/components/ExportMenu';
-import { ChatInput } from '@/components/ChatInput';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useStreamingNotes } from '@/hooks/useStreamingNotes';
 import { useNoteStorage } from '@/hooks/useNoteStorage';
@@ -188,10 +187,6 @@ const Index = () => {
           )}
         </div>
 
-        <ChatInput
-          onSendMessage={processCorrectionMessage}
-          disabled={!notes || isCorrecting || isListening}
-        />
       </div>
     </div>
   );

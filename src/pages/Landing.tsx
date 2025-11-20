@@ -100,8 +100,8 @@ const Landing = () => {
       <nav className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/transparent-logo.png" alt="NotesByAI" className="h-10 w-auto" />
-            <span className="font-bold text-xl">NotesByAI</span>
+            <img src="/logo.png" alt="NotesByAI" className="h-10 w-auto" />
+            <span className="font-bold text-xl text-blue-600 ">NotesByAI</span>
           </div>
         </div>
       </nav>
@@ -113,14 +113,14 @@ const Landing = () => {
           </Badge>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-            Stop Missing Details:
+            Stop Missing Details
             <span className="block text-blue-600 mt-2">
-              AI Takes Notes While You Listen
+              Let AI Take Notes While You Listen!
             </span>
           </h1>
 
           <p className="text-xl sm:text-2xl text-slate-600 mb-8 leading-relaxed">
-            Finally focus on learning—let AI handle your lecture notes
+            Finally focus on learning and leave your notes to AI
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6">
@@ -339,7 +339,7 @@ const Landing = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-8">
             <div className="flex items-center gap-3">
-              <img src="/transparent-logo.png" alt="NotesByAI" className="h-10 w-auto" />
+              <img src="/logo.png" alt="NotesByAI" className="h-10 w-auto" />
               <span className="font-bold text-lg">NotesByAI</span>
             </div>
 

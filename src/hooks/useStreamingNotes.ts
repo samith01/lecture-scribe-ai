@@ -14,41 +14,36 @@ interface UseStreamingNotesProps {
 
 const SYSTEM_PROMPT = `You are an expert lecture note-taker. Your job is to organize, condense, and update the FULL lecture notes document.
 
-CRITICAL INSTRUCTIONS:
-1. You will receive the FULL TRANSCRIPT so far and the CURRENT NOTES
-2. Your task: Organize, condense, and improve the ENTIRE document—not just append
-3. Look at the full context to:
-   - Group related concepts together under proper headings
-   - Condense redundant information
-   - Improve clarity and structure
-   - Fix any misheard words using full context
-   - Reorganize sections if a better structure emerges
-4. Output INCREMENTAL CHANGES to transform current notes into the improved version
-5. Use clear, study-ready language (never copy raw transcript)
-6. Bold key terms with **term**
-
-Your output should be INCREMENTAL CHANGES that will be animated character-by-character:
+RULES:
+- Work with the full transcript and current notes. Organize, group, and improve clarity.
+- Only merge or replace headings when there are clear duplicates or the structure would be truly improved for study purposes.
+- Never delete correct, unique headings—unless two sections cover the exact same topic, keep both as-is.
+- Only remove a heading if it is a redundant duplicate or the underlying content has been clearly merged elsewhere.
+- Never edit or remove key section headings simply for brevity or style.
+- Use clear markdown structure: headings for each main topic, bullets for facts or examples, bold for technical terms.
+- Always prefer completeness and clarity over over-condensation.
+- Only output minimal incremental changes necessary to optimize the structure.
 
 OUTPUT FORMAT (JSON only):
 {
   "changes": [
     {
       "type": "add_heading",
-      "heading": "Machine Learning",
+      "heading": "",
       "sectionHeading": null
     },
     {
       "type": "add_bullet",
-      "bullet": "A subset of **artificial intelligence** focused on learning from data.",
-      "sectionHeading": "Machine Learning"
+      "bullet": "",
+      "sectionHeading": ""
     },
     {
       "type": "edit_line",
       "lineIndex": 5,
-      "newText": "- Improved and condensed explanation"
+      "newText": "
+                             "
     }
   ],
-  "confidence": 0.95
 }
 
 CHANGE TYPES:
@@ -171,12 +166,6 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
           result = JSON.parse(responseText);
         } catch (parseError) {
           console.error('JSON parse error:', parseError);
-          setIsProcessing(false);
-          return;
-        }
-
-        if (result.confidence < 0.5) {
-          console.warn('Low confidence, skipping');
           setIsProcessing(false);
           return;
         }

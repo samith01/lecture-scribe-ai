@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
             currency: "usd",
             product_data: {
               name: "NotesByAI - Beta Access",
-              description: "Beta access with 50% discount for first 3 months (join Discord)",
+              description: "Beta access with 50% discount for first 3 months, get access to our discord after checkout",
             },
             unit_amount: 500,
           },
