@@ -2,24 +2,24 @@ import { useState, useCallback, useRef } from 'react';
 import { groq } from '@/utils/groqClient';
 import { applySmartDiff } from '@/utils/incrementalNoteBuilder';
 
-const SYSTEM_PROMPT = `You are an expert lecture note-taker. Your job is to extract key information and structure it beautifully.
+const SYSTEM_PROMPT = `You are an expert lecture note-taker. Extract key information and structure it as clean markdown notes.
 
 CRITICAL RULES:
-1. ONLY process NEW information from the transcript that isn't already in the notes
-2. Use clear, complete heading names (e.g., "## Artificial Intelligence Overview")
-3. Create bullet points with "- " for main points
-4. Use sub-bullets with "  - " for supporting details
-5. Bold important terms with **term**
-6. Group related information logically under appropriate headings
-7. NEVER invent or add information not in the transcript
+1. OUTPUT ONLY PURE MARKDOWN NOTES - no explanations, no meta-commentary
+2. NEVER write text like "Not specified in transcript" or "Example:" or any explanatory text
+3. Use clear, complete heading names (e.g., "## Artificial Intelligence Overview")
+4. Create bullet points with "- " for main points
+5. Use sub-bullets with "  - " for supporting details
+6. Bold important terms with **term**
+7. ONLY include information directly from the transcript
 8. If information relates to an existing topic, add bullets to that section
 9. Keep technical terms exact as spoken
 
-OUTPUT FORMAT (example):
-## Main Topic Name
-- **Key term**: Definition or explanation
-  - Supporting detail or example
-- Another important point
+OUTPUT FORMAT:
+## Topic Name
+- **Key term**: Definition
+  - Supporting detail
+- Another point
 - Related concept
 
 ## Different Topic
@@ -47,7 +47,7 @@ export const useGroqProcessor = ({ onNotesUpdate, onError }: UseGroqProcessorPro
       return;
     }
 
-    if (!recentTranscript || recentTranscript.trim().length < 20) {
+    if (!fullTranscript || fullTranscript.trim().length < 20) {
       return;
     }
 
@@ -64,7 +64,7 @@ export const useGroqProcessor = ({ onNotesUpdate, onError }: UseGroqProcessorPro
       return;
     }
 
-    const transcriptToProcess = recentTranscript.slice(lastProcessedTranscript.current.length);
+    const transcriptToProcess = fullTranscript.slice(lastProcessedTranscript.current.length);
 
     if (transcriptToProcess.trim().length < 15) {
       return;
@@ -72,7 +72,7 @@ export const useGroqProcessor = ({ onNotesUpdate, onError }: UseGroqProcessorPro
 
     setIsProcessing(true);
     lastProcessTime.current = now;
-    lastProcessedTranscript.current = recentTranscript;
+    lastProcessedTranscript.current = fullTranscript;
 
     try {
       const hasExistingNotes = currentNotes && currentNotes.trim().length > 0;
@@ -83,35 +83,20 @@ export const useGroqProcessor = ({ onNotesUpdate, onError }: UseGroqProcessorPro
         userPrompt = `EXISTING NOTES:
 ${currentNotes}
 
-NEW TRANSCRIPT SEGMENT:
+NEW TRANSCRIPT:
 ${transcriptToProcess}
 
-TASK: Extract new information from the transcript segment and add it to the appropriate sections.
-- If the topic already exists in notes, add new bullet points to that section
-- If it's a new topic, create a new section with ## heading
-- Only output the NEW or MODIFIED sections, NOT the entire document
-- Format each section with its heading and bullets
-
-Example output if adding to existing topic:
-## Existing Topic Name
-- New bullet point from transcript
-  - Supporting detail
-
-Example output if creating new topic:
-## New Topic Name
-- First point about new topic
-- Second point`;
+Extract information from the new transcript and output ONLY the sections being added or modified.
+If the topic exists, output that section with new bullets added.
+If it's a new topic, output the new section.
+OUTPUT ONLY PURE MARKDOWN - no explanations or commentary.`;
       } else {
         userPrompt = `TRANSCRIPT:
 ${transcriptToProcess}
 
-TASK: Create well-structured lecture notes from this transcript.
-- Identify main topics and create clear ## headings
-- Add bullet points for key information
-- Use sub-bullets for details and examples
-- Bold important terms with **term**
-
-Output complete note sections with headings and bullets.`;
+Create structured lecture notes from this transcript.
+OUTPUT ONLY PURE MARKDOWN NOTES - no explanations, no meta-commentary.
+Use ## headings, bullet points, and bold for key terms.`;
       }
 
       const completion = await groq.chat.completions.create({
@@ -120,9 +105,9 @@ Output complete note sections with headings and bullets.`;
           { role: 'user', content: userPrompt }
         ],
         model: 'llama-3.1-8b-instant',
-        max_tokens: 800,
-        temperature: 0.2,
-        top_p: 0.95,
+        max_tokens: 1000,
+        temperature: 0.1,
+        top_p: 0.9,
       });
 
       let newContent = completion.choices[0]?.message?.content?.trim() || '';
@@ -131,6 +116,23 @@ Output complete note sections with headings and bullets.`;
         setIsProcessing(false);
         return;
       }
+
+      newContent = newContent
+        .split('\n')
+        .filter(line => {
+          const trimmed = line.trim();
+          if (!trimmed) return true;
+          if (trimmed.startsWith('#')) return true;
+          if (trimmed.startsWith('-')) return true;
+          if (trimmed.startsWith('*')) return true;
+          if (/^[A-Z]/.test(trimmed) && trimmed.includes(':')) return false;
+          if (trimmed.toLowerCase().includes('not specified')) return false;
+          if (trimmed.toLowerCase().includes('example:')) return false;
+          if (trimmed.toLowerCase().includes('not mentioned')) return false;
+          return true;
+        })
+        .join('\n')
+        .trim();
 
       const wordCountInput = transcriptToProcess.split(/\s+/).length;
       const wordCountOutput = newContent.split(/\s+/).length;
