@@ -120,7 +120,7 @@ const Landing = () => {
           </h1>
 
           <p className="text-xl sm:text-2xl text-slate-600 mb-8 leading-relaxed">
-            Finally focus on learning—let AI handle your lecture notes
+            Finally focus on learning and let AI handle your lecture notes
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6">
