@@ -40,8 +40,8 @@ const Index = () => {
       const newTranscript = [...prev, text];
       const fullTranscript = newTranscript.join(' ');
 
-      console.log('New transcript received:', text);
-      console.log('Full transcript length:', fullTranscript.length);
+      // console.log('New transcript received:', text);
+      // console.log('Full transcript length:', fullTranscript.length);
 
       setTimeout(() => {
         processTranscript(fullTranscript);
@@ -113,7 +113,7 @@ const Index = () => {
 
   const handleToggleRecording = () => {
     if (isListening) {
-      console.log("Stopping listening")
+      // console.log("Stopping listening")
       stopListening();
       setInterimText('');
       finalizeSession();

@@ -123,8 +123,8 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
         return;
       }
 
-      console.log('Processing full transcript:', fullTranscript.length, 'chars');
-      console.log('Batched sentences:', sentenceCount.current);
+      // console.log('Processing full transcript:', fullTranscript.length, 'chars');
+      // console.log('Batched sentences:', sentenceCount.current);
       setIsProcessing(true);
       lastProcessTime.current = now;
       lastProcessedTranscript.current = fullTranscript;
@@ -138,7 +138,7 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
           ? `FULL TRANSCRIPT SO FAR:\n"${fullTranscript}"\n\nCURRENT NOTES:\n${currentContent}\n\nTASK: Organize, condense, and update the full document. Look at the entire transcript and current notes. Generate incremental changes to improve structure, group related concepts, condense redundancy, and fix any issues. Think holistically about the best organization.`
           : `FULL TRANSCRIPT:\n"${fullTranscript}"\n\nTASK: Create initial well-organized lecture notes. Generate changes to build the structure.`;
 
-        console.log('Sending to AI - Transcript length:', fullTranscript.length, 'Current notes length:', currentContent.length);
+        // console.log('Sending to AI - Transcript length:', fullTranscript.length, 'Current notes length:', currentContent.length);
 
         const completion = await groq.chat.completions.create({
           messages: [
@@ -159,7 +159,7 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
           return;
         }
 
-        console.log('AI Response received:', responseText.substring(0, 200) + '...');
+        // console.log('AI Response received:', responseText.substring(0, 200) + '...');
 
         let result: { changes: TextChange[]; confidence: number };
         try {
@@ -185,7 +185,7 @@ export const useStreamingNotes = ({ onError }: UseStreamingNotesProps) => {
             }
           });
 
-          console.log('Queueing', result.changes.length, 'animation changes');
+          // console.log('Queueing', result.changes.length, 'animation changes');
           animatorRef.current.queueChanges(result.changes);
         }
       } catch (error: any) {

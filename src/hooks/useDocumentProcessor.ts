@@ -106,7 +106,7 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
     
       const now = Date.now();
 
-      console.log('Processing transcript:', fullTranscript.length, 'chars,', sentenceCount.current, 'sentences');
+      // console.log('Processing transcript:', fullTranscript.length, 'chars,', sentenceCount.current, 'sentences');
 
       setIsProcessing(true);
       lastProcessTime.current = now;
@@ -121,7 +121,7 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
           ? `FULL TRANSCRIPT:\n"${fullTranscript}"\n\nCURRENT NOTES:\n${currentMarkdown}\n\nTASK: Review the transcript and generate edits to add NEW information only. Use proper markdown formatting.`
           : `FULL TRANSCRIPT:\n"${fullTranscript}"\n\nTASK: Create initial structured notes. Use headings, bullets, and proper markdown formatting.`;
 
-        console.log('Sending to AI...');
+        // console.log('Sending to AI...');
 
         const completion = await groq.chat.completions.create({
           messages: [
@@ -142,7 +142,7 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
           return;
         }
 
-        console.log('AI Response received:', responseText);
+        // console.log('AI Response received:', responseText);
 
         let result: { edits: AIEdit[] };
         try {
@@ -154,7 +154,7 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
         }
 
         if (result.edits && result.edits.length > 0) {
-          console.log('Applying', result.edits.length, 'edits');
+          // console.log('Applying', result.edits.length, 'edits');
 
           const newRoot = JSON.parse(JSON.stringify(documentState.root));
 
@@ -169,13 +169,13 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
               newRoot.children.push(heading);
               currentHeadingRef.current = heading;
               currentBulletRef.current = null;
-              console.log('Added heading:', edit.content);
+              // console.log('Added heading:', edit.content);
             } else if (edit.action === 'add_bullet' && edit.content) {
               if (currentHeadingRef.current) {
                 const bullet = createNode('bullet', edit.content, 1, []);
                 currentHeadingRef.current.children.push(bullet);
                 currentBulletRef.current = bullet;
-                console.log('Added bullet:', edit.content);
+                // console.log('Added bullet:', edit.content);
               } else {
                 const heading = createNode('heading', 'Notes', 2, []);
                 const bullet = createNode('bullet', edit.content, 1, []);
@@ -183,22 +183,22 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
                 newRoot.children.push(heading);
                 currentHeadingRef.current = heading;
                 currentBulletRef.current = bullet;
-                console.log('Added default heading and bullet:', edit.content);
+                // console.log('Added default heading and bullet:', edit.content);
               }
             } else if (edit.action === 'add_subbullet' && edit.content) {
               if (currentBulletRef.current) {
                 const subbullet = createNode('subbullet', edit.content, 1, []);
                 currentBulletRef.current.children.push(subbullet);
-                console.log('Added subbullet:', edit.content);
+                // console.log('Added subbullet:', edit.content);
               }
             }
           });
 
           const newState = buildDocumentState(newRoot);
           setDocumentState(newState);
-          console.log('Document updated, total nodes:', newState.keyMap.size);
+          // console.log('Document updated, total nodes:', newState.keyMap.size);
         } else {
-          console.log('No edits received from AI');
+          // console.log('No edits received from AI');
         }
       } catch (error: any) {
         console.error('Processing error:', error);
