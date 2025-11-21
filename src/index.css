@@ -140,3 +140,16 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Prevent FOUC (Flash of Unstyled Content) for animated elements */
+  .animate-fade-in,
+  .animate-scale-in {
+    animation-fill-mode: both;
+  }
+  
+  /* Hover scale animation */
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+}

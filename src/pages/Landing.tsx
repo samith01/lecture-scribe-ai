@@ -108,22 +108,22 @@ const Landing = () => {
 
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
         <div className="text-center max-w-4xl mx-auto">
-          <Badge className="mb-4 bg-blue-100 text-blue-700 hover:bg-blue-100">
+          <Badge className="mb-4 bg-blue-100 text-blue-700 hover:bg-blue-100 animate-fade-in">
             Limited Beta Launch
           </Badge>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
             Show Up to Class
-            <span className="block text-blue-600 mt-2">
+            <span className="block text-blue-600 mt-2 animate-fade-in" style={{ animationDelay: '200ms' }}>
               Leave With Perfect Notes!
             </span>
           </h1>
 
-          <p className="text-xl sm:text-2xl text-slate-600 mb-8 leading-relaxed">
+          <p className="text-xl sm:text-2xl text-slate-600 mb-8 leading-relaxed animate-fade-in" style={{ animationDelay: '300ms' }}>
             Finally focus on learning and let AI handle your lecture notes
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6 animate-fade-in" style={{ animationDelay: '400ms' }}>
             <Input
               type="email"
               placeholder="Enter your email"
@@ -135,7 +135,7 @@ const Landing = () => {
               onClick={handleCheckout}
               disabled={isLoading}
               size="lg"
-              className="h-12 px-8 text-lg bg-blue-600 hover:bg-blue-700"
+              className="h-12 px-8 text-lg bg-blue-600 hover:bg-blue-700 hover-scale"
             >
               {isLoading ? (
                 <>
@@ -151,7 +151,7 @@ const Landing = () => {
             </Button>
           </div>
 
-          <div className="flex items-center justify-center gap-6 text-sm text-slate-600">
+          <div className="flex items-center justify-center gap-6 text-sm text-slate-600 animate-fade-in" style={{ animationDelay: '500ms' }}>
             <div className="flex items-center gap-1">
               <Check className="w-4 h-4 text-green-600" />
               <span>30-Day Money Back</span>
@@ -168,8 +168,8 @@ const Landing = () => {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 animate-fade-in" style={{ animationDelay: '600ms' }}>
+        <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl hover-scale">
           <div className="aspect-video bg-slate-800 flex items-center justify-center relative group cursor-pointer">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20">
             <video src="notesbyaidemo.mp4" width={1200} height={300} controls autoPlay />
@@ -185,7 +185,7 @@ const Landing = () => {
       </section>
 
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t">
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 animate-fade-in">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
             Focus on Understanding, Not Writing
           </h2>
@@ -195,7 +195,7 @@ const Landing = () => {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white p-8 rounded-xl border-2 border-slate-200 hover:border-blue-300 transition-colors">
+          <div className="bg-white p-8 rounded-xl border-2 border-slate-200 hover:border-blue-300 transition-all hover-scale animate-fade-in" style={{ animationDelay: '100ms' }}>
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
               <Zap className="w-6 h-6 text-blue-600" />
             </div>
@@ -205,7 +205,7 @@ const Landing = () => {
             </p>
           </div>
 
-          <div className="bg-white p-8 rounded-xl border-2 border-slate-200 hover:border-blue-300 transition-colors">
+          <div className="bg-white p-8 rounded-xl border-2 border-slate-200 hover:border-blue-300 transition-all hover-scale animate-fade-in" style={{ animationDelay: '200ms' }}>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
               <Clock className="w-6 h-6 text-green-600" />
             </div>
@@ -215,7 +215,7 @@ const Landing = () => {
             </p>
           </div>
 
-          <div className="bg-white p-8 rounded-xl border-2 border-slate-200 hover:border-blue-300 transition-colors">
+          <div className="bg-white p-8 rounded-xl border-2 border-slate-200 hover:border-blue-300 transition-all hover-scale animate-fade-in" style={{ animationDelay: '300ms' }}>
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
               <Download className="w-6 h-6 text-purple-600" />
             </div>
@@ -226,66 +226,66 @@ const Landing = () => {
           </div>
         </div>
 
-        <div className="mt-12 bg-slate-50 rounded-xl p-8 border">
+        <div className="mt-12 bg-slate-50 rounded-xl p-8 border animate-fade-in" style={{ animationDelay: '400ms' }}>
           <h3 className="text-xl font-semibold mb-4">Works Everywhere</h3>
           <p className="text-slate-600 mb-4">
             In-person lectures, online classes, recorded sessions—just hit record and let AI do the work.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">In-Person Classes</Badge>
-            <Badge variant="outline">Zoom Lectures</Badge>
-            <Badge variant="outline">Recorded Sessions</Badge>
-            <Badge variant="outline">Office Hours</Badge>
-            <Badge variant="outline">Study Groups</Badge>
+            <Badge variant="outline" className="animate-scale-in" style={{ animationDelay: '500ms' }}>In-Person Classes</Badge>
+            <Badge variant="outline" className="animate-scale-in" style={{ animationDelay: '550ms' }}>Zoom Lectures</Badge>
+            <Badge variant="outline" className="animate-scale-in" style={{ animationDelay: '600ms' }}>Recorded Sessions</Badge>
+            <Badge variant="outline" className="animate-scale-in" style={{ animationDelay: '650ms' }}>Office Hours</Badge>
+            <Badge variant="outline" className="animate-scale-in" style={{ animationDelay: '700ms' }}>Study Groups</Badge>
           </div>
         </div>
       </section>
 
       <section className="bg-gradient-to-br from-blue-600 to-blue-700 text-white py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Badge className="mb-6 bg-white/20 text-white hover:bg-white/20 border-white/30">
+          <Badge className="mb-6 bg-white/20 text-white hover:bg-white/20 border-white/30 animate-fade-in">
             Early Beta Access
           </Badge>
 
-          <h2 className="text-4xl sm:text-5xl font-bold mb-6">
+          <h2 className="text-4xl sm:text-5xl font-bold mb-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
             Reserve Your Spot Today
           </h2>
 
-          <p className="text-xl mb-4 text-blue-100">
+          <p className="text-xl mb-4 text-blue-100 animate-fade-in" style={{ animationDelay: '200ms' }}>
             One-time payment of <span className="font-bold text-white text-3xl">$5</span> for beta access
           </p>
 
-          <p className="text-lg mb-8 text-blue-100">
+          <p className="text-lg mb-8 text-blue-100 animate-fade-in" style={{ animationDelay: '300ms' }}>
             No free trial—watch the demo, then decide. Beta users get priority support and special Discord perks.
           </p>
 
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 mb-8 border border-white/20">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 mb-8 border border-white/20 animate-fade-in" style={{ animationDelay: '400ms' }}>
             <h3 className="text-2xl font-semibold mb-4">What You Get:</h3>
             <ul className="text-left max-w-md mx-auto space-y-3">
-              <li className="flex items-start gap-3">
+              <li className="flex items-start gap-3 animate-fade-in" style={{ animationDelay: '500ms' }}>
                 <Check className="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" />
                 <span>Full access to AI note-taking app</span>
               </li>
-              <li className="flex items-start gap-3">
+              <li className="flex items-start gap-3 animate-fade-in" style={{ animationDelay: '600ms' }}>
                 <Check className="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" />
                 <span>50% discount for first 3 months (join Discord)</span>
               </li>
-              <li className="flex items-start gap-3">
+              <li className="flex items-start gap-3 animate-fade-in" style={{ animationDelay: '700ms' }}>
                 <Check className="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" />
                 <span>Priority support and feature requests</span>
               </li>
-              <li className="flex items-start gap-3">
+              <li className="flex items-start gap-3 animate-fade-in" style={{ animationDelay: '800ms' }}>
                 <Check className="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" />
                 <span>Early access to new features</span>
               </li>
-              <li className="flex items-start gap-3">
+              <li className="flex items-start gap-3 animate-fade-in" style={{ animationDelay: '900ms' }}>
                 <Check className="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" />
                 <span>30-day money-back guarantee</span>
               </li>
             </ul>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6 animate-fade-in" style={{ animationDelay: '1000ms' }}>
             <Input
               type="email"
               placeholder="Enter your email"
@@ -297,7 +297,7 @@ const Landing = () => {
               onClick={handleCheckout}
               disabled={isLoading}
               size="lg"
-              className="h-14 px-10 text-lg bg-white text-blue-600 hover:bg-slate-100"
+              className="h-14 px-10 text-lg bg-white text-blue-600 hover:bg-slate-100 hover-scale"
             >
               {isLoading ? (
                 <>
@@ -313,7 +313,7 @@ const Landing = () => {
             </Button>
           </div>
 
-          <div className="bg-orange-500/20 border border-orange-300/50 rounded-lg p-4 max-w-md mx-auto">
+          <div className="bg-orange-500/20 border border-orange-300/50 rounded-lg p-4 max-w-md mx-auto animate-scale-in" style={{ animationDelay: '1100ms' }}>
             <p className="font-semibold text-orange-100">
               ⚡ Join our Discord for exclusive 50% discount
             </p>
