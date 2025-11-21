@@ -81,20 +81,20 @@ After successful payment, users are redirected back to the landing page with a s
 
 Thank You for Your Payment!
 
-You will get full access to the product within two weeks.
-Please keep an eye on your email (user@example.com) for
+You will be the first to try out after our launch.
+Please keep an eye on your email for
 updates and your access details.
 
 [Close Button]
 [Join Discord for Updates Button]
 
-Questions or need a refund? Contact us at support@notesync.ai
+Questions or need a refund? Contact us at samithnfernando@gmail.com
 ```
 
 ## Footer Information
 
 ### Refund Policy
-30-day money-back guarantee, no questions asked. Contact support@notesync.ai.
+30-day money-back guarantee, no questions asked. Contact samithnfernando@gmail.com
 
 ### Access Timeline
 Beta access granted within two weeks. Users onboarded in small batches for best experience.
