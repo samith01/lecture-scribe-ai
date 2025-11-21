@@ -83,6 +83,26 @@ export default {
             height: "0",
           },
         },
+        "fade-in": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(10px)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+        },
+        "scale-in": {
+          "0%": {
+            transform: "scale(0.95)",
+            opacity: "0",
+          },
+          "100%": {
+            transform: "scale(1)",
+            opacity: "1",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -90,6 +110,23 @@ export default {
         "pulse-record": "pulse-record 1.5s ease-in-out infinite",
         "fade-in-text": "fade-in-text 0.2s ease-out forwards",
         "cursor-blink": "cursor-blink 1s step-end infinite",
+        "fade-in": "fade-in 0.5s ease-out both",
+        "scale-in": "scale-in 0.4s ease-out both",
+      },
+      animationDelay: {
+        "100": "100ms",
+        "200": "200ms",
+        "300": "300ms",
+        "400": "400ms",
+        "500": "500ms",
+        "550": "550ms",
+        "600": "600ms",
+        "650": "650ms",
+        "700": "700ms",
+        "800": "800ms",
+        "900": "900ms",
+        "1000": "1000ms",
+        "1100": "1100ms",
       },
     },
   },
