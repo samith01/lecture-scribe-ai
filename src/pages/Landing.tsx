@@ -172,7 +172,7 @@ const Landing = () => {
         <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl">
           <div className="aspect-video bg-slate-800 flex items-center justify-center relative group cursor-pointer">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20">
-            <video src="notesbyaidemo.mp4" width={1200} height={300} controls="true" autoplay="true" />
+            <video src="notesbyaidemo.mp4" width={1200} height={300} controls autoPlay />
             
             </div>
             <div className="relative z-10">

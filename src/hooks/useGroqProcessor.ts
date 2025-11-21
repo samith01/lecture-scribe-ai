@@ -12,7 +12,7 @@ Your job:
 - Err on the side of brevity and clarity—NOT transcript copying and NOT summarizing away technical specifics.
 - If a point is important, restate it concisely (do not rephrase all transcript text).
 - When multiple related points are made, combine/condense them into well-organized bullets.
-- Use **bold** for terminology, and `inline code` for code-related items.
+- Use **bold** for terminology, and \`inline code\` for code-related items.
 - Always output only the notes—the distillation a real student would create, not explanations of your actions or summaries that leave out technical content.
 - Correct any grammatical or obvious speech-to-text errors by context, but ONLY if clearly wrong.
 Do NOT repeat content already present in the notes, even if phrased differently. 
