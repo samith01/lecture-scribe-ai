@@ -113,9 +113,9 @@ const Landing = () => {
           </Badge>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
-            Show Up to Class
+            Stop Typing.
             <span className="block text-blue-600 mt-2 animate-fade-in" style={{ animationDelay: '200ms' }}>
-              Leave With Perfect Notes!
+              Start Understanding.
             </span>
           </h1>
 
@@ -144,7 +144,7 @@ const Landing = () => {
                 </>
               ) : (
                 <>
-                  Get Early Access ($5)
+                  Get Early Access ($4.99)
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </>
               )}
@@ -252,7 +252,7 @@ const Landing = () => {
           </h2>
 
           <p className="text-xl mb-4 text-blue-100 animate-fade-in" style={{ animationDelay: '200ms' }}>
-            One-time payment of <span className="font-bold text-white text-3xl">$5</span> for beta access
+            One-time payment of <span className="font-bold text-white text-3xl">$4.99</span> for beta access
           </p>
 
           <p className="text-lg mb-8 text-blue-100 animate-fade-in" style={{ animationDelay: '300ms' }}>
