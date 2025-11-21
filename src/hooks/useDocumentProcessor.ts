@@ -101,18 +101,10 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
       const newContent = fullTranscript.slice(lastProcessedTranscript.current.length);
       if (newContent.trim().length > 0) {
         pendingTranscript.current += ' ' + newContent;
-        const sentences = pendingTranscript.current.match(/[^.!?]+[.!?]+/g) || [];
-        sentenceCount.current = sentences.length;
       }
 
-      if (sentenceCount.current < 2 && lastProcessedTranscript.current.length > 0) {
-        return;
-      }
-
+    
       const now = Date.now();
-      if (now - lastProcessTime.current < minProcessInterval && lastProcessedTranscript.current.length > 0) {
-        return;
-      }
 
       console.log('Processing transcript:', fullTranscript.length, 'chars,', sentenceCount.current, 'sentences');
 
@@ -150,7 +142,7 @@ export const useDocumentProcessor = ({ onError }: UseDocumentProcessorProps) => 
           return;
         }
 
-        console.log('AI Response received:', responseText.substring(0, 300));
+        console.log('AI Response received:', responseText);
 
         let result: { edits: AIEdit[] };
         try {

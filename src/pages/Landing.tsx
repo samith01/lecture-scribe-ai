@@ -113,9 +113,9 @@ const Landing = () => {
           </Badge>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-            Stop Missing Details
+            Show Up to Class
             <span className="block text-blue-600 mt-2">
-              Let AI Take Notes While You Listen!
+              Leave With Perfect Notes!
             </span>
           </h1>
 
@@ -144,7 +144,7 @@ const Landing = () => {
                 </>
               ) : (
                 <>
-                  Get Beta Access - $5
+                  Get Early Access ($5)
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </>
               )}
@@ -160,6 +160,10 @@ const Landing = () => {
               <Check className="w-4 h-4 text-green-600" />
               <span>Lifetime Discount</span>
             </div>
+              <div className="flex items-center gap-1">
+              <Check className="w-4 h-4 text-green-600" />
+              <span>Only 50 early-access spots — lifetime discount.</span>
+            </div>
           </div>
         </div>
       </section>
@@ -167,15 +171,14 @@ const Landing = () => {
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl">
           <div className="aspect-video bg-slate-800 flex items-center justify-center relative group cursor-pointer">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
-            <div className="relative z-10">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                <Play className="w-10 h-10 text-blue-600 ml-1" />
-              </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20">
+            <video src="notesbyaidemo.mp4" width={1200} height={300} controls="true" autoplay="true" />
+            
             </div>
-            <div className="absolute bottom-6 left-6 right-6 text-white">
-              <p className="text-lg font-semibold mb-2">Watch Full Demo</p>
-              <p className="text-sm text-slate-300">See how students are already using AI to ace their classes</p>
+            <div className="relative z-10">
+              {/* <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <Play className="w-10 h-10 text-blue-600 ml-1" />
+              </div> */}
             </div>
           </div>
         </div>
@@ -239,7 +242,7 @@ const Landing = () => {
       </section>
 
       <section className="bg-gradient-to-br from-blue-600 to-blue-700 text-white py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <Badge className="mb-6 bg-white/20 text-white hover:bg-white/20 border-white/30">
             Early Beta Access
           </Badge>
@@ -303,7 +306,7 @@ const Landing = () => {
                 </>
               ) : (
                 <>
-                  Get Beta Access Now
+                  Signup For Beta Access Now!
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </>
               )}
@@ -321,20 +324,6 @@ const Landing = () => {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="bg-slate-50 rounded-xl p-8 text-center border">
-          <h3 className="text-2xl font-semibold mb-4">Why $5 Now?</h3>
-          <p className="text-slate-600 max-w-2xl mx-auto mb-6">
-            We're validating the product with real students. Your $5 commitment shows you're serious
-            and funds early development. Join our Discord community for exclusive perks and 50% off
-            your first 3 months when we officially launch.
-          </p>
-          <p className="text-sm text-slate-500">
-            30-day money-back guarantee. No questions asked.
-          </p>
-        </div>
-      </section>
-
       <footer className="border-t bg-slate-50 py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-8">
@@ -343,48 +332,11 @@ const Landing = () => {
               <span className="font-bold text-lg">NotesByAI</span>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-6 text-sm text-slate-600">
-              <a href="mailto:support@notesbyai.com" className="hover:text-blue-600">
-                Contact Support
-              </a>
-              <a href="#" className="hover:text-blue-600">
-                Privacy Policy
-              </a>
-              <a href="#" className="hover:text-blue-600">
-                Terms of Service
-              </a>
-              <a href="https://discord.com/invite/SE7EEDPr" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">
-                Discord Community
-              </a>
-            </div>
-          </div>
-
-          <div className="border-t pt-8 space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-              <h4 className="font-semibold text-slate-900 mb-2">Refund Policy</h4>
-              <p className="text-slate-600">
-                We offer a 30-day money-back guarantee. If you're not satisfied with your beta access,
-                contact us at{' '}
-                <a href="mailto:support@notesbyai.com" className="text-blue-600 hover:underline font-medium">
-                  support@notesbyai.com
-                </a>{' '}
-                for a full refund, no questions asked.
-              </p>
-            </div>
-
-            <div className="bg-slate-100 rounded-lg p-4 text-sm">
-              <h4 className="font-semibold text-slate-900 mb-2">Access Timeline</h4>
-              <p className="text-slate-600">
-                Beta access will be granted within two weeks of purchase. We're onboarding users in small
-                batches to ensure the best experience. You'll receive an email with your access credentials.
-              </p>
-            </div>
-
             <div className="text-sm text-slate-600">
               <p className="mb-2">
                 <strong>Questions?</strong> Email us at{' '}
-                <a href="mailto:support@notesbyai.com" className="text-blue-600 hover:underline">
-                  support@notesbyai.com
+                <a href="mailto:samithnfernando@gmail.com" className="text-blue-600 hover:underline">
+                  samithnfernando@gmail.com
                 </a>
               </p>
               <p>We typically respond within 24 hours.</p>

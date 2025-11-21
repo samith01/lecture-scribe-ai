@@ -27,10 +27,10 @@ const PaymentSuccessModal = ({ open, onClose, email }: PaymentSuccessModalProps)
 
           <DialogHeader className="space-y-3">
             <DialogTitle className="text-2xl font-bold">
-              Thank You for Your Payment!
+              Thank You for Your Contribution!
             </DialogTitle>
             <DialogDescription className="text-base leading-relaxed text-slate-600">
-              You will get full access to the product within two weeks. Please keep an eye on your email{email ? ` (${email})` : ''} for updates and your access details.
+              You will be one of the first to get access after our launch. Please keep an eye on your email{email ? ` (${email})` : ''} for updates and your access details.
             </DialogDescription>
           </DialogHeader>
 
@@ -63,10 +63,10 @@ const PaymentSuccessModal = ({ open, onClose, email }: PaymentSuccessModalProps)
             <p className="text-xs text-slate-500 leading-relaxed">
               Questions or need a refund? Contact us at{' '}
               <a
-                href="mailto:support@notesbyai.com"
+                href="mailto:samithnfernando@gmail.com"
                 className="text-blue-600 hover:underline"
               >
-                support@notesbyai.com
+                samithnfernando@gmail.com
               </a>
             </p>
           </div>
