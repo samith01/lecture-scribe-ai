@@ -65,7 +65,7 @@ export const useSpeechRecognition = ({ onTranscript, onInterimTranscript, onErro
     if (recognitionRef.current){
       recognitionRef.current.onend = () => {
              if (isListening) {
-            console.log("Ended")
+            // console.log("Ended")
             try {
               recognitionRef.current.start();
             } catch (e) {
