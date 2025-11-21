@@ -1,5 +1,3 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -32,7 +30,7 @@ Deno.serve(async (req: Request) => {
 
     // Just return the pre-created payment link
     return new Response(
-      JSON.stringify({ url: import.meta.env.VITE_STRIPE_PAYMENT_LINK }),
+      JSON.stringify({ url: Deno.env.get("VITE_STRIPE_PAYMENT_LINK") }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -41,7 +39,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error("Error returning payment link:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Internal server error" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
