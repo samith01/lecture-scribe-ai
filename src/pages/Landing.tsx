@@ -4,9 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Check, Play, ArrowRight, Zap, Clock, Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useSearchParams } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
 import PaymentSuccessModal from '@/components/PaymentSuccessModal';
+import { useSearchParams } from 'react-router-dom';
+
 
 const Landing = () => {
   const [email, setEmail] = useState('');
@@ -16,78 +16,38 @@ const Landing = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
+
   useEffect(() => {
-    const checkPaymentSuccess = async () => {
-      const paymentStatus = searchParams.get('payment');
+    const checkPaymentSuccess = () => {
+  const paymentStatus = searchParams.get('payment');
 
-      if (paymentStatus === 'success') {
-        const { data } = await supabase
-          .from('beta_signups')
-          .select('email')
-          .eq('payment_status', 'completed')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+  if (paymentStatus === 'success') {
+    setShowSuccessModal(true);
 
-        if (data?.email) {
-          setPaidUserEmail(data.email);
-        }
-
-        setShowSuccessModal(true);
-
-        const newSearchParams = new URLSearchParams(searchParams);
-        newSearchParams.delete('payment');
-        setSearchParams(newSearchParams, { replace: true });
-      }
-    };
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete('payment');
+    setSearchParams(newSearchParams, { replace: true });
+  }
+};
+;
 
     checkPaymentSuccess();
   }, [searchParams, setSearchParams]);
 
-  const handleCheckout = async () => {
-    if (!email || !email.includes('@')) {
-      toast({
-        title: 'Invalid Email',
-        description: 'Please enter a valid email address',
-        variant: 'destructive',
-      });
-      return;
-    }
+ const handleCheckout = () => {
+  if (!email || !email.includes('@')) {
+    toast({
+      title: 'Invalid Email',
+      description: 'Please enter a valid email address',
+      variant: 'destructive',
+    });
+    return;
+  }
 
-    setIsLoading(true);
+  const paymentLink = import.meta.env.VITE_STRIPE_PAYMENT_LINK;
+  window.location.href = paymentLink;
+};
 
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/create-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session');
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to start checkout. Please try again.',
-        variant: 'destructive',
-      });
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">

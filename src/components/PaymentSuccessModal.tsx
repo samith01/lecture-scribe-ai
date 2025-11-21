@@ -44,7 +44,7 @@ const PaymentSuccessModal = ({ open, onClose, email }: PaymentSuccessModalProps)
             </Button>
 
             <a
-              href="https://discord.com/invite/SE7EEDPr"
+              href={import.meta.env.VITE_DISCORD_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full"
