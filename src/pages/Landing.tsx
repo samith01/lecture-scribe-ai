@@ -71,7 +71,7 @@ const Landing = () => {
           <Badge className="mb-4 bg-blue-100 text-blue-700 hover:bg-blue-100 animate-fade-in">
             Limited Beta Launch
           </Badge>
-
+         
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
             Stop Typing.
             <span className="block text-blue-600 mt-2 animate-fade-in" style={{ animationDelay: '200ms' }}>
@@ -124,7 +124,19 @@ const Landing = () => {
               <Check className="w-4 h-4 text-green-600" />
               <span>Only 50 early-access spots — lifetime discount.</span>
             </div>
+            
+           <a href="https://www.producthunt.com/products/notesbyai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-notesbyai" target="_blank">
+<img
+  src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1041005&theme=dark&t=1763773386854"
+  alt="NotesByAI - Finally… a way to actually listen in class. | Product Hunt"
+  style={{ width: "150px", height: "54px" }}
+  width={250}
+  height={54}
+/>
+
+          </a>
           </div>
+
         </div>
       </section>
 
