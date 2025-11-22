@@ -122,10 +122,10 @@ const Landing = () => {
             </div>
               <div className="flex items-center gap-1">
               <Check className="w-4 h-4 text-green-600" />
-              <span>Only 50 early-access spots — lifetime discount.</span>
+              <span>Only 50 early-access spots</span>
             </div>
             
-           <a href="https://www.producthunt.com/products/notesbyai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-notesbyai" target="_blank">
+           <a className="hidden sm:inline-block"  href="https://www.producthunt.com/products/notesbyai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-notesbyai" target="_blank">
 <img
   src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1041005&theme=light&t=1763773386854"
   alt="NotesByAI - Finally… a way to actually listen in class. | Product Hunt"
