@@ -127,7 +127,7 @@ const Landing = () => {
             
            <a href="https://www.producthunt.com/products/notesbyai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-notesbyai" target="_blank">
 <img
-  src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1041005&theme=dark&t=1763773386854"
+  src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1041005&theme=light&t=1763773386854"
   alt="NotesByAI - Finally… a way to actually listen in class. | Product Hunt"
   style={{ width: "150px", height: "54px" }}
   width={250}
