@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { Analytics } from "@vercel/analytics/next"
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -14,7 +13,6 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <Analytics/>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
